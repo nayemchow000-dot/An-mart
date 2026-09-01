@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #B76E79;
+  --color-primary-50: #fbf5f6;
+  --color-primary-100: #f6e8ea;
+  --color-primary-200: #eed5d9;
+  --color-primary-300: #e1b6be;
+  --color-primary-400: #d0909b;
+  --color-primary-500: #b76e79;
+  --color-primary-600: #9e5560;
+  --color-primary-700: #85454f;
+  --color-primary-800: #6f3b44;
+  --color-primary-900: #5e343b;
+  
+  --color-cream: #F8F1E7;
+  --color-cream-dark: #EBE0D3;
+  
+  --color-dark: #222222;
+  --color-dark-light: #444444;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-serif: "Playfair Display", serif;
+
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
+
+@layer base {
+  html, body {
+    @apply text-dark bg-[#FAFAFA] antialiased font-sans selection:bg-primary/20 selection:text-primary-800;
+    /* Handle mobile safe areas */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-dark tracking-tight;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center bg-primary text-white font-medium px-6 py-3 rounded-full transition-all duration-300 hover:bg-primary-600 hover:shadow-lg hover:shadow-primary/30 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .btn-outline {
+    @apply inline-flex items-center justify-center border-2 border-primary text-primary font-medium px-6 py-3 rounded-full transition-all duration-300 hover:bg-primary hover:text-white active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Cards */
+  .card-premium {
+    @apply bg-white rounded-2xl shadow-sm border border-cream hover:shadow-md transition-shadow duration-300 overflow-hidden;
+  }
+
+  /* Glassmorphism */
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border-b border-cream;
+  }
+
+  /* Animations & Loaders */
+  .skeleton {
+    @apply bg-gradient-to-r from-cream via-cream-dark to-cream bg-[length:400%_100%] animate-shimmer rounded;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar hiding */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
