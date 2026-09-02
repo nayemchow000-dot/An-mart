@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../../config/firebase';
+import { supabase } from '../../config/supabase';
 import { Input } from '../../components/ui/Input';
 import toast from 'react-hot-toast';
 import { Helmet } from 'react-helmet-async';
@@ -37,40 +35,37 @@ export default function Register() {
 
     try {
       setLoading(true);
-      try {
-        // 1. Create Auth User
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        const user = userCredential.user;
+      
+      // 1. Create Auth User
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          }
+        }
+      });
 
-        // 2. Update Auth Profile
-        await updateProfile(user, {
-          displayName: formData.name
-        });
+      if (authError) throw authError;
 
-        // 3. Create Firestore Document
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: 'customer',
-          addresses: [],
-          createdAt: new Date().toISOString()
-        });
-      } catch (err: any) {
-        if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || err.message?.includes('API key')) {
-          console.warn('Firebase register failed, falling back to local demo register:', err);
-          const { useAuthStore } = await import('../../store/useAuthStore');
-          const { setUser } = useAuthStore.getState();
-          setUser({
-            uid: 'demo-user-' + Date.now(),
+      // 2. Create Profile in PostgreSQL (usually handled by a trigger, but we can do it manually if RLS allows or we assume it's created, but for safe migration we will insert it directly)
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            full_name: formData.name,
             email: formData.email,
-            name: formData.name,
+            phone: formData.phone,
             role: 'customer',
-            createdAt: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           });
-        } else {
-          throw err;
+          
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          // Don't fail the whole registration if profile upsert fails due to RLS, 
+          // as the trigger might have already created it.
         }
       }
 
@@ -78,10 +73,10 @@ export default function Register() {
       navigate('/');
     } catch (error: any) {
       console.error(error);
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.message?.includes('already registered')) {
         toast.error('Email is already in use');
       } else {
-        toast.error('Failed to create account. Please try again.');
+        toast.error(error.message || 'Failed to create account. Please try again.');
       }
     } finally {
       setLoading(false);

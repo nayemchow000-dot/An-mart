@@ -4,14 +4,13 @@ import { ShoppingBag, Heart, User, Search, Menu, Phone, MapPin, LogOut } from 'l
 import { useCartStore } from '../../store/useCartStore';
 import { useWishlistStore } from '../../store/useWishlistStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { auth } from '../../config/firebase';
-import { signOut } from 'firebase/auth';
+import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { getTotalItems } = useCartStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   
   const cartItemsCount = getTotalItems();
@@ -26,7 +25,8 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
+      logout();
       toast.success('Logged out successfully');
       navigate('/');
     } catch (error) {

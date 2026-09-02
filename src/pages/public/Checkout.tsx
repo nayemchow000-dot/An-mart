@@ -6,8 +6,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { formatPrice } from '../../utils/formatters';
-import { db } from '../../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
@@ -54,17 +53,18 @@ export default function Checkout() {
 
     try {
       const orderData = {
-        userId: user?.uid || 'guest',
-        customerInfo: formData,
+        user_id: user?.uid || null,
+        customer_info: formData,
         items: items,
         subtotal,
-        deliveryCharge,
-        grandTotal,
+        delivery_charge: deliveryCharge,
+        grand_total: grandTotal,
         status: 'pending',
-        createdAt: serverTimestamp(),
+        created_at: new Date().toISOString(),
       };
 
-      await addDoc(collection(db, 'orders'), orderData);
+      const { error } = await supabase.from('orders').insert([orderData]);
+      if (error) throw error;
       
       // If payment method is not COD, here we would redirect to payment gateway
       if (formData.paymentMethod !== 'cod') {

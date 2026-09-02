@@ -2,8 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Package, Heart, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { auth } from '../../config/firebase';
-import { signOut } from 'firebase/auth';
+import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
@@ -12,7 +11,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       logout();
       toast.success('Successfully logged out');
       navigate('/login');

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth, db } from '../../config/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import toast from 'react-hot-toast';
 import { Helmet } from 'react-helmet-async';
@@ -10,41 +8,42 @@ import { Helmet } from 'react-helmet-async';
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const { setUser } = useAuthStore();
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-
-      // Check if user document exists in Firestore
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      let userData;
-      if (userDoc.exists()) {
-        userData = userDoc.data();
-      } else {
-        // Create new user profile in Firestore
-        userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: firebaseUser.displayName || 'New User',
-          role: 'customer',
-          createdAt: new Date().toISOString(),
-          addresses: [],
-        };
-        await setDoc(userDocRef, userData);
-      }
-      
-      setUser(userData as any);
-      toast.success('Successfully logged in!');
-      navigate('/');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        }
+      });
+      if (error) throw error;
     } catch (error: any) {
       console.error('Google login error:', error);
       toast.error(error.message || 'Failed to login with Google.');
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      
+      toast.success('Successfully logged in!');
+      navigate('/');
+    } catch (error: any) {
+      console.error('Email login error:', error);
+      toast.error(error.message || 'Failed to login.');
     } finally {
       setLoading(false);
     }
@@ -63,6 +62,47 @@ export default function Login() {
             <p className="text-sm text-dark-light mb-8">
               Sign in to your AN Mart account
             </p>
+
+            <form onSubmit={handleEmailLogin} className="space-y-4 mb-6 text-left">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full btn-primary"
+              >
+                {loading ? 'Signing in...' : 'Sign In with Email'}
+              </button>
+            </form>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
           
             <button
               onClick={handleGoogleLogin}
@@ -77,6 +117,15 @@ export default function Login() {
               </svg>
               {loading ? 'Signing in...' : 'Sign In with Google'}
             </button>
+            
+            <div className="text-center mt-6">
+              <p className="text-sm text-dark-light">
+                Don't have an account?{' '}
+                <Link to="/register" className="font-medium text-primary hover:text-primary-700">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

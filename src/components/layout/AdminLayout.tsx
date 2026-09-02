@@ -21,15 +21,24 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { auth } from '../../config/firebase';
-import { signOut } from 'firebase/auth';
+import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, logout } = useAuthStore();
+  const { user, isLoading, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Show loading spinner while determining auth state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500 font-medium">Verifying access...</p>
+      </div>
+    );
+  }
 
   // Security Verification (Role-based access control)
   if (!user) {
@@ -42,7 +51,7 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       logout();
       toast.success('Logged out from admin panel');
       navigate('/login');

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Category } from '../types';
-import { db } from '../config/firebase';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 
 interface CategoryState {
   categories: Category[];
@@ -16,41 +15,68 @@ export const useCategoryStore = create<CategoryState>((set) => ({
   categories: [],
   isLoading: true,
   initializeStore: () => {
-    const q = collection(db, 'categories');
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const categoriesData: Category[] = [];
-      snapshot.forEach((doc) => {
-        categoriesData.push({ id: doc.id, ...doc.data() } as Category);
-      });
-      // Sort by display order
-      categoriesData.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-      set({ categories: categoriesData, isLoading: false });
-    }, (error) => {
-      console.error("Firestore Error in categories:", error);
-      set({ isLoading: false });
-    });
-    return unsubscribe;
+    let mounted = true;
+
+    const fetchCategories = async () => {
+      if (!isSupabaseConfigured) {
+        console.log("Supabase is not configured. Categories will be empty.");
+        if (mounted) set({ isLoading: false });
+        return;
+      }
+      try {
+        const { data, error } = await supabase.from('categories').select('*');
+        if (error) throw error;
+        
+        if (data && mounted) {
+          const categoriesData = data as Category[];
+          categoriesData.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          set({ categories: categoriesData, isLoading: false });
+        }
+      } catch (error) {
+        console.error("Supabase Error in categories:", error);
+        if (mounted) set({ isLoading: false });
+      }
+    };
+
+    fetchCategories();
+
+    let channel: any = null;
+    if (isSupabaseConfigured) {
+      channel = supabase.channel('categories_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
+        .subscribe();
+    }
+
+    return () => {
+      mounted = false;
+      if (channel) supabase.removeChannel(channel);
+    };
   },
   addCategory: async (category) => {
+    if (!isSupabaseConfigured) return;
     try {
-      await setDoc(doc(db, 'categories', category.id), category);
+      const { error } = await supabase.from('categories').insert([category]);
+      if (error) throw error;
     } catch (error) {
       console.error("Failed to add category:", error);
       throw error;
     }
   },
   updateCategory: async (id, updatedCategory) => {
+    if (!isSupabaseConfigured) return;
     try {
-      const docRef = doc(db, 'categories', id);
-      await updateDoc(docRef, updatedCategory);
+      const { error } = await supabase.from('categories').update(updatedCategory).eq('id', id);
+      if (error) throw error;
     } catch (error) {
       console.error("Failed to update category:", error);
       throw error;
     }
   },
   deleteCategory: async (id) => {
+    if (!isSupabaseConfigured) return;
     try {
-      await deleteDoc(doc(db, 'categories', id));
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
     } catch (error) {
       console.error("Failed to delete category:", error);
       throw error;

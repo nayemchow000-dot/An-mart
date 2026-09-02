@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { SiteConfig, defaultSiteConfig, SectionConfig } from '../types/websiteConfig';
-import { db } from '../config/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 import toast from 'react-hot-toast';
 
 interface SiteConfigState {
@@ -28,11 +27,21 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
   isLoading: true,
 
   initializeStore: async () => {
+    if (!isSupabaseConfigured) {
+      console.log("Supabase is not configured. Using local default site config.");
+      set({ isLoading: false });
+      return;
+    }
+
     try {
-      const docRef = doc(db, 'settings', 'website');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      const { data: docSnap, error } = await supabase
+        .from('website_settings')
+        .select('*')
+        .eq('id', 'website')
+        .single();
+        
+      if (!error && docSnap) {
+        const data = docSnap;
         set({
           publishedConfig: {
             ...defaultSiteConfig,
@@ -51,11 +60,12 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
           isLoading: false
         });
       } else {
-        // Only attempt to initialize default in firestore if we might have permissions
+        // Only attempt to initialize default if we might have permissions
         // For now, just set local state
         set({ isLoading: false });
         try {
-          await setDoc(docRef, {
+          await supabase.from('website_settings').upsert({
+            id: 'website',
             publishedConfig: defaultSiteConfig,
             draftConfig: defaultSiteConfig
           });
@@ -115,11 +125,22 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
 
   publishChanges: async () => {
     const { draftConfig } = get();
+    if (!isSupabaseConfigured) {
+      set((state) => ({
+        publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),
+        hasUnsavedChanges: false,
+      }));
+      toast.success('Website changes published locally (Supabase not configured)!');
+      return;
+    }
     try {
-      await setDoc(doc(db, 'settings', 'website'), {
+      const { error } = await supabase.from('website_settings').upsert({
+        id: 'website',
         draftConfig: draftConfig,
         publishedConfig: draftConfig
-      }, { merge: true });
+      });
+      
+      if (error) throw error;
 
       set((state) => ({
         publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),
