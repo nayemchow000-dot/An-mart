@@ -8,6 +8,7 @@ interface SiteConfigState {
   publishedConfig: SiteConfig;
   hasUnsavedChanges: boolean;
   isLoading: boolean;
+  hasRlsError: boolean;
   
   initializeStore: () => Promise<void>;
   updateTheme: (themeUpdates: Partial<SiteConfig['theme']>) => void;
@@ -25,8 +26,15 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
   publishedConfig: JSON.parse(JSON.stringify(defaultSiteConfig)),
   hasUnsavedChanges: false,
   isLoading: true,
+  hasRlsError: false,
 
   initializeStore: async () => {
+    if (get().hasRlsError) {
+      // Keep local state if RLS previously blocked us
+      set({ isLoading: false });
+      return;
+    }
+    
     if (!isSupabaseConfigured) {
       console.log("Supabase is not configured. Using local default site config.");
       set({ isLoading: false });
@@ -42,7 +50,7 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
         
       if (error && (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42501')) {
         console.log(`website_settings fetch failed (${error.code}). Using local defaults.`);
-        set({ isLoading: false });
+        set({ hasRlsError: true, isLoading: false });
         return;
       }
 
@@ -70,13 +78,15 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
         // For now, just set local state
         set({ isLoading: false });
         try {
-          await supabase.from('website_settings').upsert({
+          const { error: upsertError } = await supabase.from('website_settings').upsert({
             id: 'website',
             publishedConfig: defaultSiteConfig,
             draftConfig: defaultSiteConfig
           });
-        } catch(e) {
+          if (upsertError) throw upsertError;
+        } catch(e: any) {
           console.log("Not authorized to write default settings. Using local defaults.");
+          if (e?.code === '42501') set({ hasRlsError: true });
         }
       }
     } catch (e) {
@@ -152,6 +162,7 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
           set((state) => ({
             publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),
             hasUnsavedChanges: false,
+            hasRlsError: true
           }));
           const reason = error.code === '42501' ? 'Permission Denied by RLS' : 'Database table missing';
           toast.success(`Website changes published locally (${reason}).`);

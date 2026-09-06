@@ -5,12 +5,19 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 import { useProductStore } from '../../store/useProductStore';
+import { useSiteConfigStore } from '../../store/useSiteConfigStore';
 
 export default function MainLayout() {
   useEffect(() => {
     // Initialize real-time products store
-    const unsubscribe = useProductStore.getState().initializeStore();
-    return () => unsubscribe();
+    const unsubscribeProducts = useProductStore.getState().initializeStore();
+    
+    // Initialize site config store
+    useSiteConfigStore.getState().initializeStore();
+
+    return () => {
+      unsubscribeProducts();
+    };
   }, []);
 
   return (
