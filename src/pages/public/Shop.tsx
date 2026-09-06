@@ -21,7 +21,7 @@ export default function Shop() {
   };
 
   // Filter products
-  let displayedProducts = [...products];
+  let displayedProducts = products.filter(p => p.status === "published");
   if (selectedCategories.length > 0) {
     displayedProducts = displayedProducts.filter(p => selectedCategories.includes(p.category));
   }
