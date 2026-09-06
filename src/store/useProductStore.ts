@@ -94,6 +94,15 @@ export const useProductStore = create<ProductState>((set) => ({
         }
         throw result.error;
       }
+      
+      // Update local state on success for instant UI feedback
+      set((state) => {
+        const exists = state.products.find(p => p.id === product.id);
+        if (!exists) {
+          return { products: [...state.products, product] };
+        }
+        return state;
+      });
     } catch (error) {
       console.error("Failed to add product:", error);
       throw error;
@@ -128,6 +137,11 @@ export const useProductStore = create<ProductState>((set) => ({
         }
         throw result.error;
       }
+      
+      // Update local state on success for instant UI feedback
+      set((state) => ({ 
+        products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p) 
+      }));
     } catch (error) {
       console.error("Failed to update product:", error);
       throw error;
@@ -145,6 +159,9 @@ export const useProductStore = create<ProductState>((set) => ({
         }
         throw error;
       }
+      
+      // Update local state on success for instant UI feedback
+      set((state) => ({ products: state.products.filter(p => p.id !== id) }));
     } catch (error) {
       console.error("Failed to delete product:", error);
       throw error;
