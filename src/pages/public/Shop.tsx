@@ -1,16 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useCategoryStore } from '../../store/useCategoryStore';
 import { Helmet } from 'react-helmet-async';
 import { SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import ProductCard from '../../components/product/ProductCard';
 import { useProductStore } from '../../store/useProductStore';
 
 export default function Shop() {
+  const { slug } = useParams<{ slug?: string }>();
+  const { categories } = useCategoryStore();
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const { products } = useProductStore();
 
-  const categories = ['Cosmetics', 'Skincare', 'Jewellery', 'Accessories'];
+  
+
+  useEffect(() => {
+    if (slug) {
+      setSelectedCategories([slug]);
+    } else {
+      setSelectedCategories([]);
+    }
+  }, [slug]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => 
@@ -63,15 +75,15 @@ export default function Shop() {
                 <h3 className="font-serif font-semibold text-lg border-b border-cream pb-2 mb-4">Categories</h3>
                 <ul className="space-y-3">
                   {categories.map(cat => (
-                    <li key={cat}>
+                    <li key={cat.name}>
                       <label className="flex items-center gap-3 cursor-pointer group">
                         <input 
                           type="checkbox" 
-                          checked={selectedCategories.includes(cat)}
-                          onChange={() => toggleCategory(cat)}
+                          checked={selectedCategories.includes(cat.slug)}
+                          onChange={() => toggleCategory(cat.slug)}
                           className="w-4 h-4 rounded border-cream-dark text-primary focus:ring-primary" 
                         />
-                        <span className="text-sm text-dark-light group-hover:text-primary transition-colors">{cat}</span>
+                        <span className="text-sm text-dark-light group-hover:text-primary transition-colors">{cat.name}</span>
                       </label>
                     </li>
                   ))}
@@ -155,15 +167,15 @@ export default function Shop() {
                 <h3 className="font-serif font-semibold text-lg border-b border-cream pb-2 mb-4">Categories</h3>
                 <ul className="space-y-4">
                   {categories.map(cat => (
-                    <li key={cat}>
+                    <li key={cat.name}>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input 
                           type="checkbox" 
-                          checked={selectedCategories.includes(cat)}
-                          onChange={() => toggleCategory(cat)}
+                          checked={selectedCategories.includes(cat.slug)}
+                          onChange={() => toggleCategory(cat.slug)}
                           className="w-5 h-5 rounded border-cream-dark text-primary focus:ring-primary" 
                         />
-                        <span className="text-base text-dark-light">{cat}</span>
+                        <span className="text-base text-dark-light">{cat.name}</span>
                       </label>
                     </li>
                   ))}
