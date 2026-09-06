@@ -6,7 +6,6 @@ import { mockProducts } from '../data/mockProducts';
 interface ProductState {
   products: Product[];
   isLoading: boolean;
-  hasRlsError: boolean;
   initializeStore: () => () => void;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (id: string, updatedProduct: Partial<Product>) => Promise<void>;
@@ -16,16 +15,10 @@ interface ProductState {
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   isLoading: true,
-  hasRlsError: false,
   initializeStore: () => {
     let mounted = true;
 
     const fetchProducts = async () => {
-      if (get().hasRlsError) {
-        // If we know RLS is blocking us, stick to local state to preserve Admin UI changes
-        if (mounted) set({ isLoading: false });
-        return;
-      }
       if (!isSupabaseConfigured) {
         console.log("Supabase is not configured. Falling back to mock products locally.");
         if (mounted) set({ products: mockProducts, isLoading: false });
@@ -36,11 +29,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         const { data, error } = await supabase.from('products').select('*');
         
         if (error) {
-          if (error.code === '42501' || error.code === '42P01' || error.code === 'PGRST205') {
-            set({ hasRlsError: true });
-            if (mounted) set({ isLoading: false });
-            return;
-          }
           throw error;
         }
         
@@ -56,25 +44,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
             const { data: newData } = await supabase.from('products').select('*');
             if (mounted) set({ products: (newData || []) as Product[], isLoading: false });
           } catch(e) {
-            console.log("Not authorized to auto-seed products or table missing. Using mock list locally.");
-            set({ hasRlsError: true });
-            if (mounted) set({ products: mockProducts, isLoading: false });
+            console.log("Not authorized to auto-seed products or table missing.");
+            if (mounted) set({ products: [], isLoading: false });
           }
         }
       } catch (error) {
         console.error("Supabase Error in products:", error);
-        console.log("Falling back to mock products due to Supabase error.");
-        if (mounted) set({ products: mockProducts, isLoading: false });
+        if (mounted) set({ products: [], isLoading: false });
       }
     };
 
-    // Only fetch initially if we don't already have products, or if we haven't hit an RLS error yet
-    if (get().products.length === 0 || !get().hasRlsError) {
-      fetchProducts();
-    }
+    fetchProducts();
 
     let channel: any = null;
-    if (isSupabaseConfigured && !get().hasRlsError) {
+    if (isSupabaseConfigured) {
       channel = supabase.channel('products_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts)
         .subscribe();
@@ -105,15 +88,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
       }
       
       if (result.error) {
-        if (result.error.code === '42501' || result.error.code === '42P01' || result.error.code === 'PGRST205') {
-          console.warn(`Product add failed (${result.error.code}). Using local state.`);
-          set((state) => ({ products: [...state.products, product], hasRlsError: true }));
-          return;
-        }
         throw result.error;
       }
       
-      // Update local state on success for instant UI feedback
+      // We don't need to manually update state here because the Realtime subscription (postgres_changes) 
+      // will catch the insert and call fetchProducts(). Or we can optimistically update AFTER success.
       set((state) => {
         const exists = state.products.find(p => p.id === product.id);
         if (!exists) {
@@ -146,18 +125,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
       }
 
       if (result.error) {
-        if (result.error.code === '42501' || result.error.code === '42P01' || result.error.code === 'PGRST205') {
-          console.warn(`Product update failed (${result.error.code}). Using local state.`);
-          set((state) => ({ 
-            products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p),
-            hasRlsError: true
-          }));
-          return;
-        }
         throw result.error;
       }
       
-      // Update local state on success for instant UI feedback
+      // Update local state on actual DB success for instant UI feedback
       set((state) => ({ 
         products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p) 
       }));
@@ -171,15 +142,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) {
-        if (error.code === '42501' || error.code === '42P01' || error.code === 'PGRST205') {
-          console.warn(`Product delete failed (${error.code}). Using local state.`);
-          set((state) => ({ products: state.products.filter(p => p.id !== id), hasRlsError: true }));
-          return;
-        }
         throw error;
       }
       
-      // Update local state on success for instant UI feedback
+      // Update local state on actual DB success for instant UI feedback
       set((state) => ({ products: state.products.filter(p => p.id !== id) }));
     } catch (error) {
       console.error("Failed to delete product:", error);

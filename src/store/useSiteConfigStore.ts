@@ -8,7 +8,6 @@ interface SiteConfigState {
   publishedConfig: SiteConfig;
   hasUnsavedChanges: boolean;
   isLoading: boolean;
-  hasRlsError: boolean;
   
   initializeStore: () => Promise<void>;
   updateTheme: (themeUpdates: Partial<SiteConfig['theme']>) => void;
@@ -26,15 +25,8 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
   publishedConfig: JSON.parse(JSON.stringify(defaultSiteConfig)),
   hasUnsavedChanges: false,
   isLoading: true,
-  hasRlsError: false,
 
   initializeStore: async () => {
-    if (get().hasRlsError) {
-      // Keep local state if RLS previously blocked us
-      set({ isLoading: false });
-      return;
-    }
-    
     if (!isSupabaseConfigured) {
       console.log("Supabase is not configured. Using local default site config.");
       set({ isLoading: false });
@@ -86,7 +78,6 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
           if (upsertError) throw upsertError;
         } catch(e: any) {
           console.log("Not authorized to write default settings. Using local defaults.");
-          if (e?.code === '42501') set({ hasRlsError: true });
         }
       }
     } catch (e) {
@@ -157,17 +148,6 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
       });
       
       if (error) {
-        if (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42501') {
-          // Table missing or RLS blocking. Just update local state.
-          set((state) => ({
-            publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),
-            hasUnsavedChanges: false,
-            hasRlsError: true
-          }));
-          const reason = error.code === '42501' ? 'Permission Denied by RLS' : 'Database table missing';
-          toast.success(`Website changes published locally (${reason}).`);
-          return;
-        }
         throw error;
       }
 
