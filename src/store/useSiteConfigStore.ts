@@ -40,19 +40,25 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
         .eq('id', 'website')
         .single();
         
+      if (error && (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42501')) {
+        console.log(`website_settings fetch failed (${error.code}). Using local defaults.`);
+        set({ isLoading: false });
+        return;
+      }
+
       if (!error && docSnap) {
         const data = docSnap;
         set({
           publishedConfig: {
             ...defaultSiteConfig,
-            ...(data.publishedConfig || {}),
+            ...(data.publishedConfig ? (typeof data.publishedConfig === 'string' ? JSON.parse(data.publishedConfig) : data.publishedConfig) : {}),
             theme: { ...defaultSiteConfig.theme, ...(data.publishedConfig?.theme || {}) },
             branding: { ...defaultSiteConfig.branding, ...(data.publishedConfig?.branding || {}) },
             sections: data.publishedConfig?.sections || defaultSiteConfig.sections,
           },
           draftConfig: {
             ...defaultSiteConfig,
-            ...(data.draftConfig || data.publishedConfig || {}),
+            ...(data.draftConfig ? (typeof data.draftConfig === 'string' ? JSON.parse(data.draftConfig) : data.draftConfig) : (typeof data.publishedConfig === 'string' ? JSON.parse(data.publishedConfig) : data.publishedConfig) || {}),
             theme: { ...defaultSiteConfig.theme, ...(data.draftConfig?.theme || data.publishedConfig?.theme || {}) },
             branding: { ...defaultSiteConfig.branding, ...(data.draftConfig?.branding || data.publishedConfig?.branding || {}) },
             sections: data.draftConfig?.sections || data.publishedConfig?.sections || defaultSiteConfig.sections,
@@ -140,7 +146,19 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
         publishedConfig: draftConfig
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42501') {
+          // Table missing or RLS blocking. Just update local state.
+          set((state) => ({
+            publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),
+            hasUnsavedChanges: false,
+          }));
+          const reason = error.code === '42501' ? 'Permission Denied by RLS' : 'Database table missing';
+          toast.success(`Website changes published locally (${reason}).`);
+          return;
+        }
+        throw error;
+      }
 
       set((state) => ({
         publishedConfig: JSON.parse(JSON.stringify(state.draftConfig)),

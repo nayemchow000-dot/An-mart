@@ -18,8 +18,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem(product);
-    toast.success(`${product.name} added to cart`, {
+    addItem({ ...product, cartItemId: `${product.id}-${Date.now()}`, quantity: 1 });
+    toast.success(`${product.title} added to cart`, {
       icon: '🛍️',
       style: {
         background: '#333',
@@ -42,8 +42,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   // Mock rating if not present
-  const rating = product.rating || 4.5;
-  const reviewsCount = product.reviewsCount || Math.floor(Math.random() * 100) + 10;
+  const rating = (product as any).rating || 4.5;
+  const reviewsCount = (product as any).reviewsCount || Math.floor(Math.random() * 100) + 10;
 
   return (
     <Link to={`/product/${product.id}`} className="group card-premium flex flex-col relative">
@@ -67,7 +67,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="aspect-square bg-cream/30 overflow-hidden relative p-4">
         <img 
           src={product.images[0]} 
-          alt={product.name} 
+          alt={product.title} 
           className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
         />
         
@@ -86,7 +86,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="p-4 md:p-5 flex flex-col flex-grow">
         <span className="text-xs text-primary font-medium uppercase tracking-wider mb-1">{product.category}</span>
         <h3 className="font-serif font-bold text-dark text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-          {product.name}
+          {product.title}
         </h3>
 
         {/* Rating */}

@@ -6,7 +6,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { formatPrice } from '../../utils/formatters';
-import { supabase } from '../../config/supabase';
+import { supabase, isSupabaseConfigured } from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
@@ -63,8 +63,13 @@ export default function Checkout() {
         created_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from('orders').insert([orderData]);
-      if (error) throw error;
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from('orders').insert([orderData]);
+        if (error) throw error;
+      } else {
+        console.warn('Supabase is not configured. Simulating order placement.');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       
       // If payment method is not COD, here we would redirect to payment gateway
       if (formData.paymentMethod !== 'cod') {

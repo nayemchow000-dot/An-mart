@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import toast from 'react-hot-toast';
@@ -7,10 +7,19 @@ import { Helmet } from 'react-helmet-async';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setUser } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Only navigate away once the central auth store confirms login AND has loaded the profile/role
+      const from = location.state?.from?.pathname || (user.role === 'admin' ? '/admin' : '/');
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, location]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -33,18 +42,22 @@ export default function Login() {
     e.preventDefault();
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+
+      if (authError) {
+        throw authError;
+      }
       
       toast.success('Successfully logged in!');
-      navigate('/');
+      // We don't navigate here! We wait for the useEffect above to trigger 
+      // once useSupabaseAuth finishes loading the profile and setting the store.
+
     } catch (error: any) {
       console.error('Email login error:', error);
       toast.error(error.message || 'Failed to login.');
-    } finally {
       setLoading(false);
     }
   };
@@ -86,6 +99,7 @@ export default function Login() {
                   placeholder="••••••••"
                 />
               </div>
+
               <button
                 type="submit"
                 disabled={loading}
@@ -103,7 +117,7 @@ export default function Login() {
                 <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-          
+            
             <button
               onClick={handleGoogleLogin}
               disabled={loading}

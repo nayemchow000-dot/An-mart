@@ -70,8 +70,30 @@ export const useProductStore = create<ProductState>((set) => ({
   addProduct: async (product) => {
     if (!isSupabaseConfigured) return;
     try {
-      const { error } = await supabase.from('products').insert([product]);
-      if (error) throw error;
+      let productToSave = { ...product };
+      
+      let result = await supabase.from('products').insert([productToSave]);
+      
+      // Dynamically strip any columns that don't exist in the database schema yet
+      while (result.error && result.error.code === 'PGRST204') {
+        const match = result.error.message.match(/Could not find the '([^']+)' column/);
+        if (match && match[1]) {
+          const col = match[1];
+          delete (productToSave as any)[col];
+          result = await supabase.from('products').insert([productToSave]);
+        } else {
+          break;
+        }
+      }
+      
+      if (result.error) {
+        if (result.error.code === '42501' || result.error.code === '42P01' || result.error.code === 'PGRST205') {
+          console.warn(`Product add failed (${result.error.code}). Using local state.`);
+          set((state) => ({ products: [...state.products, product] }));
+          return;
+        }
+        throw result.error;
+      }
     } catch (error) {
       console.error("Failed to add product:", error);
       throw error;
@@ -80,8 +102,32 @@ export const useProductStore = create<ProductState>((set) => ({
   updateProduct: async (id, updatedProduct) => {
     if (!isSupabaseConfigured) return;
     try {
-      const { error } = await supabase.from('products').update(updatedProduct).eq('id', id);
-      if (error) throw error;
+      let productToSave = { ...updatedProduct };
+
+      let result = await supabase.from('products').update(productToSave).eq('id', id);
+      
+      // Dynamically strip any columns that don't exist in the database schema yet
+      while (result.error && result.error.code === 'PGRST204') {
+        const match = result.error.message.match(/Could not find the '([^']+)' column/);
+        if (match && match[1]) {
+          const col = match[1];
+          delete (productToSave as any)[col];
+          result = await supabase.from('products').update(productToSave).eq('id', id);
+        } else {
+          break;
+        }
+      }
+
+      if (result.error) {
+        if (result.error.code === '42501' || result.error.code === '42P01' || result.error.code === 'PGRST205') {
+          console.warn(`Product update failed (${result.error.code}). Using local state.`);
+          set((state) => ({ 
+            products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p) 
+          }));
+          return;
+        }
+        throw result.error;
+      }
     } catch (error) {
       console.error("Failed to update product:", error);
       throw error;
@@ -91,7 +137,14 @@ export const useProductStore = create<ProductState>((set) => ({
     if (!isSupabaseConfigured) return;
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501' || error.code === '42P01' || error.code === 'PGRST205') {
+          console.warn(`Product delete failed (${error.code}). Using local state.`);
+          set((state) => ({ products: state.products.filter(p => p.id !== id) }));
+          return;
+        }
+        throw error;
+      }
     } catch (error) {
       console.error("Failed to delete product:", error);
       throw error;

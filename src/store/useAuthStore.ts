@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 
 interface AuthState {
   user: User | null;
@@ -7,14 +8,26 @@ interface AuthState {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setLoading: (isLoading: boolean) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  
   setUser: (user) => set({ user, isAuthenticated: !!user }),
+  
   setLoading: (isLoading) => set({ isLoading }),
-  logout: () => set({ user: null, isAuthenticated: false }),
+  
+  logout: async () => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+    set({ user: null, isAuthenticated: false });
+  },
 }));

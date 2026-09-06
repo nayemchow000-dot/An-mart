@@ -32,6 +32,18 @@ export interface Category {
   updatedAt?: string;
 }
 
+export interface Brand {
+  id: string;
+  name: string;
+  nameBn?: string;
+  slug: string;
+  image?: string;
+  description?: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface ProductFAQ {
   question: string;
   answer: string;

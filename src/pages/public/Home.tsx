@@ -1,10 +1,29 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, Sparkles, Gem, ShieldCheck, Truck, Clock } from 'lucide-react';
+import { ArrowRight, Star, Sparkles, Gem, ShieldCheck, Truck, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../../components/product/ProductCard';
 import { useProductStore } from '../../store/useProductStore';
+import { useSiteConfigStore } from '../../store/useSiteConfigStore';
 
 export default function Home() {
   const { products } = useProductStore();
+  const { publishedConfig } = useSiteConfigStore();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const heroSection = publishedConfig.sections.find(s => s.id === 'hero-slider');
+  const bannersSection = publishedConfig.sections.find(s => s.id === 'promotional-banners');
+
+  const slides = heroSection?.data?.slides || [];
+  const banners = bannersSection?.data?.banners || [];
+
+  // Auto-advance slides
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -14,44 +33,90 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative bg-[#FAFAFA] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-32 flex flex-col md:flex-row items-center">
-          <div className="w-full md:w-1/2 z-10 text-center md:text-left">
+      <section className="relative bg-[#FAFAFA] overflow-hidden group">
+        {slides.length > 0 ? (
+          <div className="relative h-[80vh] md:h-[600px] lg:h-[700px] w-full">
+            {slides.map((slide: any, index: number) => (
+              <div
+                key={slide.id}
+                className={`absolute inset-0 transition-opacity duration-1000 ${
+                  index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                }`}
+              >
+                <div className="absolute inset-0 bg-black/40 z-10" />
+                <img
+                  src={slide.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff'}
+                  alt={slide.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 z-20 flex items-center justify-center text-center">
+                  <div className="max-w-3xl px-4">
+                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-white leading-tight mb-6 drop-shadow-lg">
+                      {slide.title}
+                    </h1>
+                    {slide.subtitle && (
+                      <p className="text-xl md:text-2xl text-white/90 mb-8 font-medium drop-shadow-md">
+                        {slide.subtitle}
+                      </p>
+                    )}
+                    <Link
+                      to={slide.link || '/shop'}
+                      className="inline-flex px-8 py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30"
+                    >
+                      {slide.buttonText || 'Shop Now'} <ArrowRight size={18} className="ml-2" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {slides.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronRight size={24} />
+                </button>
+                <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-2">
+                  {slides.map((_: any, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        idx === currentSlide ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-32 flex flex-col items-center text-center">
             <span className="text-[#c2a578] font-medium tracking-wider text-sm uppercase mb-4 block">
               Welcome to AN Mart
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 leading-tight mb-6">
               Discover Pure <br className="hidden md:block" /> Radiance
             </h1>
-            <p className="text-gray-600 text-lg mb-8 max-w-lg mx-auto md:mx-0">
+            <p className="text-gray-600 text-lg mb-8 max-w-lg mx-auto">
               Explore our exclusive collection of premium cosmetics, authentic skincare, and exquisite women's jewellery.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Link 
-                to="/shop" 
-                className="px-8 py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium flex items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30"
-              >
-                Shop Collection <ArrowRight size={18} className="ml-2" />
-              </Link>
-            </div>
+            <Link
+              to="/shop"
+              className="px-8 py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium inline-flex items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30"
+            >
+              Shop Collection <ArrowRight size={18} className="ml-2" />
+            </Link>
           </div>
-          <div className="w-full md:w-1/2 mt-12 md:mt-0 relative">
-            <div className="aspect-[4/5] md:aspect-square w-full max-w-md mx-auto rounded-t-full shadow-2xl relative overflow-hidden bg-gray-200">
-              <img 
-                src="https://images.unsplash.com/photo-1615397323211-18cbac68a184?auto=format&fit=crop&q=80&w=1920" 
-                alt="Premium Cosmetics" 
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            {/* Decorative Elements */}
-            <div className="absolute top-10 right-10 md:right-0 bg-white p-3 rounded-full shadow-xl text-[#c2a578] animate-bounce-slow">
-              <Sparkles size={24} />
-            </div>
-            <div className="absolute bottom-20 left-10 md:-left-4 bg-white p-3 rounded-full shadow-xl text-[#c2a578] animate-bounce-slow" style={{ animationDelay: '1s' }}>
-              <Star size={24} />
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Features Section */}
@@ -89,6 +154,22 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Promotional Banners */}
+      {banners.length > 0 && (
+        <section className="py-12 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {banners.slice(0, 2).map((banner: any) => (
+                <Link key={banner.id} to={banner.link || '/shop'} className="block overflow-hidden rounded-2xl group relative aspect-[21/9]">
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors z-10" />
+                  <img src={banner.imageUrl} alt="Promotion" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Categories Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,6 +177,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">Shop by Category</h2>
             <div className="w-16 h-1 bg-[#c2a578] mx-auto rounded"></div>
           </div>
+          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
               { name: 'Cosmetics', icon: Sparkles, link: '/category/cosmetics' },
@@ -123,53 +205,25 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">Trending Now</h2>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">New Arrivals</h2>
               <div className="w-16 h-1 bg-[#c2a578] rounded"></div>
             </div>
-            <Link to="/shop" className="hidden md:flex items-center text-[#c2a578] hover:text-[#1a1a1a] font-medium transition-colors">
-              View All Products <ArrowRight size={18} className="ml-2" />
+            <Link to="/shop" className="hidden md:flex items-center text-[#c2a578] font-medium hover:text-[#b09467] transition-colors">
+              View All <ArrowRight size={18} className="ml-2" />
             </Link>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.length > 0 ? (
-              products.slice(0, 8).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                Loading products...
-              </div>
-            )}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            {products.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
           
           <div className="mt-10 text-center md:hidden">
-            <Link to="/shop" className="inline-flex items-center text-[#c2a578] hover:text-[#1a1a1a] font-medium transition-colors">
+            <Link to="/shop" className="inline-flex items-center text-[#c2a578] font-medium hover:text-[#b09467] transition-colors">
               View All Products <ArrowRight size={18} className="ml-2" />
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Promotional Banner */}
-      <section className="py-24 bg-[#1a1a1a] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1599643478514-4a420804ce68?auto=format&fit=crop&q=80&w=1920')] bg-cover bg-center"></div>
-        <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
-          <span className="text-[#c2a578] font-medium tracking-wider text-sm uppercase mb-4 block">
-            Special Collection
-          </span>
-          <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6">
-            Elevate Your Daily <br/> Beauty Ritual
-          </h2>
-          <p className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto">
-            Discover our curated selection of premium international brands, 100% authentic and delivered right to your doorstep.
-          </p>
-          <Link 
-            to="/shop" 
-            className="px-10 py-4 bg-white text-[#1a1a1a] rounded hover:bg-[#c2a578] hover:text-white font-semibold transition-colors inline-flex items-center justify-center"
-          >
-            Explore Collection
-          </Link>
         </div>
       </section>
     </div>

@@ -8,25 +8,36 @@ export function useSupabaseAuth() {
   useEffect(() => {
     let mounted = true;
 
-    async function getInitialSession() {
-      if (!isSupabaseConfigured) {
-        if (mounted) {
-          setUser(null);
-          setLoading(false);
-        }
+    if (!isSupabaseConfigured) {
+      if (mounted) {
+        setUser(null);
+        setLoading(false);
+      }
+      return;
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`Auth event: ${event}`, session?.user?.id);
+      
+      if (!mounted) return;
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setLoading(false);
         return;
       }
 
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        if (session?.user) {
-          const { data: profile } = await supabase
+      if (session?.user) {
+        try {
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error("Profile fetch error in onAuthStateChange:", error);
+          }
 
           if (mounted) {
             setUser({
@@ -35,54 +46,26 @@ export function useSupabaseAuth() {
               name: profile?.full_name || session.user.user_metadata?.full_name || 'User',
               role: profile?.role || 'customer',
               phone: profile?.phone,
-              createdAt: profile?.created_at || new Date().toISOString(),
-              addresses: [], // Address management can be added later
+              createdAt: profile?.created_at || session.user.created_at || new Date().toISOString(),
+              addresses: [],
             });
           }
-        } else {
-          if (mounted) setUser(null);
+        } catch (error) {
+          console.error("Auth state error:", error);
+        } finally {
+          if (mounted) setLoading(false);
         }
-      } catch (error) {
-        console.error("Auth state error:", error);
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    getInitialSession();
-
-    let subscription: any = null;
-    
-    if (isSupabaseConfigured) {
-      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          setUser({
-            uid: session.user.id,
-            email: session.user.email!,
-            name: profile?.full_name || session.user.user_metadata?.full_name || 'User',
-            role: profile?.role || 'customer',
-            phone: profile?.phone,
-            createdAt: profile?.created_at || new Date().toISOString(),
-            addresses: [],
-          });
-        } else {
+      } else {
+        if (mounted) {
           setUser(null);
+          setLoading(false);
         }
-        setLoading(false);
-      });
-      subscription = data.subscription;
-    }
+      }
+    });
 
     return () => {
       mounted = false;
-      if (subscription) subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [setUser, setLoading]);
 }

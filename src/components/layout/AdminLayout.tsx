@@ -73,7 +73,7 @@ export default function AdminLayout() {
     { name: 'Media Library', path: '/admin/media', icon: <ImageIcon size={20} /> },
     { name: 'Landing Pages', path: '/admin/landing-pages', icon: <Layout size={20} /> },
     { name: 'SEO', path: '/admin/seo', icon: <Search size={20} /> },
-    { name: 'Website Content', path: '/admin/content', icon: <FileText size={20} /> },
+    { name: 'Homepage CMS', path: '/admin/content', icon: <FileText size={20} /> },
     { name: 'Legal Pages', path: '/admin/legal', icon: <Shield size={20} /> },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
