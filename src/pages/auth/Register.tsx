@@ -63,7 +63,7 @@ export default function Register() {
           });
           
         if (profileError) {
-          console.error("Profile creation error:", profileError);
+          console.warn("Profile creation error:", profileError);
           // Don't fail the whole registration if profile upsert fails due to RLS, 
           // as the trigger might have already created it.
         }
@@ -72,7 +72,7 @@ export default function Register() {
       toast.success('Account created successfully!');
       navigate('/');
     } catch (error: any) {
-      console.error(error);
+      console.warn(error);
       if (error.message?.includes('already registered')) {
         toast.error('Email is already in use');
       } else {

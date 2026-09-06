@@ -32,7 +32,7 @@ export default function Login() {
       });
       if (error) throw error;
     } catch (error: any) {
-      console.error('Google login error:', error);
+      console.warn('Google login error:', error);
       toast.error(error.message || 'Failed to login with Google.');
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function Login() {
       // once useSupabaseAuth finishes loading the profile and setting the store.
 
     } catch (error: any) {
-      console.error('Email login error:', error);
+      console.warn('Email login error:', error);
       toast.error(error.message || 'Failed to login.');
       setLoading(false);
     }

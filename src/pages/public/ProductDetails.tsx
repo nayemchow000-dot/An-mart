@@ -71,7 +71,7 @@ export default function ProductDetails() {
           <div className="w-full md:w-1/2 flex flex-col-reverse md:flex-row gap-4">
             {/* Thumbnails */}
             <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto md:w-24 flex-shrink-0 scrollbar-hide">
-              {product.images.map((img, idx) => (
+              {(product.images || []).map((img, idx) => (
                 <button 
                   key={idx}
                   onClick={() => setActiveImage(idx)}
@@ -87,7 +87,7 @@ export default function ProductDetails() {
             {/* Main Image */}
             <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[500px] flex-grow bg-cream rounded-2xl overflow-hidden">
               <img 
-                src={product.images[activeImage]} 
+                src={product.images?.[activeImage] || ""} 
                 alt={product.title}
                 className="absolute inset-0 w-full h-full object-cover"
               />

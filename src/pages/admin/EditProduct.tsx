@@ -118,7 +118,7 @@ export default function EditProduct() {
       navigate('/admin/products');
     } catch (error) {
       toast.error('Failed to update product');
-      console.error(error);
+      console.warn(error);
     } finally {
       setIsLoading(false);
     }

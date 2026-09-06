@@ -28,7 +28,7 @@ export const useBrandStore = create<BrandState>((set, get) => ({
         const { data, error } = await supabase.from('brands').select('*').order('name', { ascending: true });
         if (error) {
           if (error.code !== '42P01' && error.code !== 'PGRST205') { // Ignore table not found error for now
-            console.error("Supabase Error in brands:", error);
+            console.warn("Supabase Error in brands:", error);
           }
           if (mounted) set({ isLoading: false });
           return;
@@ -38,7 +38,7 @@ export const useBrandStore = create<BrandState>((set, get) => ({
           set({ brands: data as Brand[], isLoading: false });
         }
       } catch (error) {
-        console.error("Fetch brands exception:", error);
+        console.warn("Fetch brands exception:", error);
         if (mounted) set({ isLoading: false });
       }
     };

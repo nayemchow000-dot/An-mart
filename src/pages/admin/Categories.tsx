@@ -125,7 +125,7 @@ export default function AdminCategories() {
       setIsModalOpen(false);
     } catch (error) {
       toast.error('Failed to save category');
-      console.error(error);
+      console.warn(error);
     } finally {
       setIsLoading(false);
     }

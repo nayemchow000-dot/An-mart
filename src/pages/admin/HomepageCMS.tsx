@@ -104,7 +104,7 @@ export default function HomepageCMS() {
       toast.success('Image uploaded successfully');
     } catch (error) {
       toast.error('Failed to upload image');
-      console.error(error);
+      console.warn(error);
     } finally {
       setUploadingImage(null);
     }

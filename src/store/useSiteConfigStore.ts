@@ -1,3 +1,4 @@
+import { handleDBError } from "../utils/dbErrorHandling";
 import { create } from 'zustand';
 import { SiteConfig, defaultSiteConfig, SectionConfig } from '../types/websiteConfig';
 import { supabase, isSupabaseConfigured } from '../config/supabase';
@@ -42,7 +43,7 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
         
       if (error && (error.code === '42P01' || error.code === 'PGRST205' || error.code === '42501')) {
         console.log(`website_settings fetch failed (${error.code}). Using local defaults.`);
-        set({ hasRlsError: true, isLoading: false });
+        set({ isLoading: false });
         return;
       }
 
@@ -75,13 +76,13 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
             publishedConfig: defaultSiteConfig,
             draftConfig: defaultSiteConfig
           });
-          if (upsertError) throw upsertError;
+          if (upsertError) { handleDBError(upsertError, 'website_settings'); throw upsertError; }
         } catch(e: any) {
-          console.log("Not authorized to write default settings. Using local defaults.");
+          handleDBError(e, 'website_settings'); console.log("Not authorized to write default settings. Using local defaults.");
         }
       }
     } catch (e) {
-      console.error("Failed to load site config:", e);
+      console.warn("Failed to load site config:", e);
       set({ isLoading: false });
     }
   },
@@ -148,6 +149,7 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
       });
       
       if (error) {
+        handleDBError(error, 'website_settings');
         throw error;
       }
 
@@ -157,7 +159,7 @@ export const useSiteConfigStore = create<SiteConfigState>((set, get) => ({
       }));
       toast.success('Website changes published successfully!');
     } catch (error) {
-      console.error('Failed to publish changes', error);
+      console.warn('Failed to publish changes', error);
       toast.error('Failed to publish changes');
     }
   },

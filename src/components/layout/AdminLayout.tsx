@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
+import DatabaseSetupAlert from '../admin/DatabaseSetupAlert';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -79,7 +80,9 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <>
+      <DatabaseSetupAlert />
+      <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -166,5 +169,6 @@ export default function AdminLayout() {
         </div>
       </main>
     </div>
+    </>
   );
 }

@@ -84,7 +84,7 @@ export default function Checkout() {
       navigate('/profile'); 
     } catch (error) {
       toast.error('Failed to place order. Please try again.');
-      console.error(error);
+      console.warn(error);
     } finally {
       setLoading(false);
     }

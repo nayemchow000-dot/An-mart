@@ -1,3 +1,4 @@
+import { handleDBError } from "../utils/dbErrorHandling";
 import { create } from 'zustand';
 import { Category } from '../types';
 import { supabase, isSupabaseConfigured } from '../config/supabase';
@@ -25,7 +26,7 @@ export const useCategoryStore = create<CategoryState>((set) => ({
       }
       try {
         const { data, error } = await supabase.from('categories').select('*');
-        if (error) throw error;
+        if (error) { handleDBError(error, 'categories'); throw error; }
         
         if (data && mounted) {
           const categoriesData = data as Category[];
@@ -33,7 +34,7 @@ export const useCategoryStore = create<CategoryState>((set) => ({
           set({ categories: categoriesData, isLoading: false });
         }
       } catch (error) {
-        console.error("Supabase Error in categories:", error);
+        console.warn("Supabase Error in categories:", error);
         if (mounted) set({ isLoading: false });
       }
     };
@@ -56,9 +57,9 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     if (!isSupabaseConfigured) return;
     try {
       const { error } = await supabase.from('categories').insert([category]);
-      if (error) throw error;
+      if (error) { handleDBError(error, 'categories'); throw error; }
     } catch (error) {
-      console.error("Failed to add category:", error);
+      console.warn("Failed to add category:", error);
       throw error;
     }
   },
@@ -66,9 +67,9 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     if (!isSupabaseConfigured) return;
     try {
       const { error } = await supabase.from('categories').update(updatedCategory).eq('id', id);
-      if (error) throw error;
+      if (error) { handleDBError(error, 'categories'); throw error; }
     } catch (error) {
-      console.error("Failed to update category:", error);
+      console.warn("Failed to update category:", error);
       throw error;
     }
   },
@@ -76,9 +77,9 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     if (!isSupabaseConfigured) return;
     try {
       const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) throw error;
+      if (error) { handleDBError(error, 'categories'); throw error; }
     } catch (error) {
-      console.error("Failed to delete category:", error);
+      console.warn("Failed to delete category:", error);
       throw error;
     }
   },

@@ -26,7 +26,7 @@ export default function AdminOrders() {
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.warn('Error fetching orders:', error);
       toast.error('Failed to fetch orders');
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ export default function AdminOrders() {
       if (error) throw error;
       toast.success('Order status updated');
     } catch (error) {
-      console.error('Error updating order:', error);
+      console.warn('Error updating order:', error);
       toast.error('Failed to update status');
     }
   };

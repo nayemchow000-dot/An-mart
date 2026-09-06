@@ -36,7 +36,7 @@ export function useSupabaseAuth() {
             .single();
 
           if (error && error.code !== 'PGRST116') {
-            console.error("Profile fetch error in onAuthStateChange:", error);
+            console.warn("Profile fetch error in onAuthStateChange:", error);
           }
 
           if (mounted) {
@@ -51,7 +51,7 @@ export function useSupabaseAuth() {
             });
           }
         } catch (error) {
-          console.error("Auth state error:", error);
+          console.warn("Auth state error:", error);
         } finally {
           if (mounted) setLoading(false);
         }

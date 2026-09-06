@@ -46,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const reviewsCount = (product as any).reviewsCount || Math.floor(Math.random() * 100) + 10;
 
   return (
-    <Link to={`/product/${product.id}`} className="group card-premium flex flex-col relative">
+    <Link to={`/product/${product.slug}`} className="group card-premium flex flex-col relative">
       {/* Discount Badge */}
       {product.discountPrice && (
         <div className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded z-10 shadow-sm">
@@ -66,7 +66,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image */}
       <div className="aspect-square bg-cream/30 overflow-hidden relative p-4">
         <img 
-          src={product.images[0]} 
+          src={product.images?.[0] || ""} 
           alt={product.title} 
           className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
         />

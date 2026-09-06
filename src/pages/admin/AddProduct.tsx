@@ -32,6 +32,8 @@ export default function AddProduct() {
     deliveryCharge: 0,
     deliveryTime: '2-3 Days',
     isCodAvailable: true,
+    isFeatured: false,
+    isNewArrival: false,
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -125,8 +127,8 @@ export default function AddProduct() {
         deliveryCharge: Number(formData.deliveryCharge || 0),
         deliveryTime: formData.deliveryTime,
         isCodAvailable: formData.isCodAvailable,
-        isFeatured: formData.isFeatured,
-        isNewArrival: formData.isNewArrival,
+        isFeatured: formData.isFeatured || false,
+        isNewArrival: formData.isNewArrival || false,
         createdAt: new Date().toISOString()
       };
 
@@ -134,8 +136,8 @@ export default function AddProduct() {
       toast.success('Product created successfully');
       navigate('/admin/products');
     } catch (error) {
-      toast.error('Failed to create product');
-      console.error(error);
+      toast.error(`Failed to create product: ${error?.message || error?.details || JSON.stringify(error)}`);
+      console.warn(error);
     } finally {
       setIsLoading(false);
     }

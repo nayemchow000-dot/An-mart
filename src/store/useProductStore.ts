@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Product } from '../types';
 import { supabase, isSupabaseConfigured } from '../config/supabase';
 import { mockProducts } from '../data/mockProducts';
+import { handleDBError } from '../utils/dbErrorHandling';
 
 interface ProductState {
   products: Product[];
@@ -29,6 +30,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         const { data, error } = await supabase.from('products').select('*');
         
         if (error) {
+          handleDBError(error, 'products');
           throw error;
         }
         
@@ -39,7 +41,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
           console.log("Database products empty. Attempting to seed...");
           try {
             const { error: seedError } = await supabase.from('products').upsert(mockProducts);
-            if (seedError) throw seedError;
+            if (seedError) {
+              handleDBError(seedError, 'products');
+              throw seedError;
+            }
             
             const { data: newData } = await supabase.from('products').select('*');
             if (mounted) set({ products: (newData || []) as Product[], isLoading: false });
@@ -49,7 +54,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
           }
         }
       } catch (error) {
-        console.error("Supabase Error in products:", error);
+        console.warn("Supabase Error in products:", error);
         if (mounted) set({ products: [], isLoading: false });
       }
     };
@@ -76,8 +81,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
       let result = await supabase.from('products').insert([productToSave]);
       
       // Dynamically strip any columns that don't exist in the database schema yet
-      while (result.error && result.error.code === 'PGRST204') {
-        const match = result.error.message.match(/Could not find the '([^']+)' column/);
+      while (result.error && (result.error.code === 'PGRST204' || result.error.code === '42703')) {
+        const match = result.error.message.match(/Could not find the '([^']+)' column/) || result.error.message.match(/column "([^"]+)" of relation/);
         if (match && match[1]) {
           const col = match[1];
           delete (productToSave as any)[col];
@@ -88,6 +93,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       }
       
       if (result.error) {
+        handleDBError(result.error, 'products');
         throw result.error;
       }
       
@@ -101,7 +107,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         return state;
       });
     } catch (error) {
-      console.error("Failed to add product:", error);
+      console.warn("Failed to add product:", error);
       throw error;
     }
   },
@@ -113,8 +119,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
       let result = await supabase.from('products').update(productToSave).eq('id', id);
       
       // Dynamically strip any columns that don't exist in the database schema yet
-      while (result.error && result.error.code === 'PGRST204') {
-        const match = result.error.message.match(/Could not find the '([^']+)' column/);
+      while (result.error && (result.error.code === 'PGRST204' || result.error.code === '42703')) {
+        const match = result.error.message.match(/Could not find the '([^']+)' column/) || result.error.message.match(/column "([^"]+)" of relation/);
         if (match && match[1]) {
           const col = match[1];
           delete (productToSave as any)[col];
@@ -125,6 +131,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       }
 
       if (result.error) {
+        handleDBError(result.error, 'products');
         throw result.error;
       }
       
@@ -133,7 +140,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p) 
       }));
     } catch (error) {
-      console.error("Failed to update product:", error);
+      console.warn("Failed to update product:", error);
       throw error;
     }
   },
@@ -142,13 +149,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) {
+        handleDBError(error, 'products');
         throw error;
       }
       
       // Update local state on actual DB success for instant UI feedback
       set((state) => ({ products: state.products.filter(p => p.id !== id) }));
     } catch (error) {
-      console.error("Failed to delete product:", error);
+      console.warn("Failed to delete product:", error);
       throw error;
     }
   },
