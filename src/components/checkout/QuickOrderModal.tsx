@@ -31,7 +31,7 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
 
   const price = product.discountPrice || product.price;
   const subtotal = price * quantity;
-  const deliveryCharge = formData.division === 'Dhaka' ? 60 : 120;
+  const deliveryCharge = formData.division === 'Dhaka' ? 100 : 150;
   const grandTotal = subtotal + deliveryCharge;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -139,8 +139,8 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-cream-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
               >
-                <option value="Dhaka">Dhaka (Inside) - ৳60</option>
-                <option value="Outside Dhaka">Outside Dhaka - ৳120</option>
+                <option value="Dhaka">Dhaka (Inside) - ৳100</option>
+                <option value="Outside Dhaka">Outside Dhaka - ৳150</option>
               </select>
             </div>
 

@@ -27,7 +27,7 @@ export default function Checkout() {
 
   // Calculate totals
   const subtotal = getTotalAmount();
-  const deliveryCharge = formData.division === 'Dhaka' ? 60 : 120;
+  const deliveryCharge = formData.division === 'Dhaka' ? 100 : 150;
   const grandTotal = subtotal + deliveryCharge;
 
   if (items.length === 0) {

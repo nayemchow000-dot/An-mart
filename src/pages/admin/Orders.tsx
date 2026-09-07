@@ -133,6 +133,7 @@ export default function AdminOrders() {
                   <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
                     <th className="p-4 font-medium">Order ID</th>
                     <th className="p-4 font-medium">Customer</th>
+                    <th className="p-4 font-medium">Products</th>
                     <th className="p-4 font-medium">Date</th>
                     <th className="p-4 font-medium">Payment</th>
                     <th className="p-4 font-medium">Status</th>
@@ -148,6 +149,15 @@ export default function AdminOrders() {
                       <td className="p-4">
                         <div className="text-gray-900 font-medium">{order.customer_info?.name}</div>
                         <div className="text-xs text-gray-500">{order.customer_info?.phone}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col gap-1">
+                          {(order.items || []).map((item: any, idx: number) => (
+                            <div key={idx} className="text-xs text-gray-700">
+                              <span className="font-medium line-clamp-1" title={item.title}>{item.title}</span> <span className="text-gray-500">x{item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
                       </td>
                       <td className="p-4 text-gray-500 text-xs">
                         {new Date(order.created_at).toLocaleDateString('en-US', {
