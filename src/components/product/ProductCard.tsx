@@ -85,10 +85,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Content */}
       <div className="p-4 md:p-5 flex flex-col flex-grow">
         <span className="text-xs text-primary font-medium uppercase tracking-wider mb-1">{product.category}</span>
-        <h3 className="font-serif font-bold text-dark text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-serif font-bold text-dark text-lg mb-0.5 line-clamp-2 group-hover:text-primary transition-colors">
           {product.title}
         </h3>
-
+        {product.titleBn && (
+          <h4 className="font-sans text-dark-light text-sm mb-2 line-clamp-1">{product.titleBn}</h4>
+        )}
+        
         {/* Rating */}
         <div className="flex items-center gap-1 mb-3">
           <div className="flex text-yellow-400">

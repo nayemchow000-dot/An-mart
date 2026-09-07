@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Globe, Heart, Smile, Mail, MapPin, Phone } from 'lucide-react';
+import { useSiteConfigStore } from '../../store/useSiteConfigStore';
 
 export default function Footer() {
+  const { publishedConfig } = useSiteConfigStore();
+  const branding = publishedConfig?.branding || {};
+  
+  const storeName = branding.storeName || 'AN Mart';
+  const contactEmail = branding.contactEmail || 'support@anmart.com';
+  const contactPhone = branding.contactPhone || '+880 1712-345678';
+  const storeAddress = (branding as any).address || '123 Beauty Avenue, Block C, Banani, Dhaka, Bangladesh';
+
   return (
     <footer className="bg-dark text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -10,7 +19,7 @@ export default function Footer() {
           {/* Brand & About */}
           <div>
             <Link to="/" className="font-serif text-3xl font-bold tracking-tight text-white mb-6 inline-block">
-              AN Mart
+              {storeName}
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Your premier destination for authentic cosmetics, premium skincare, and exquisite women's jewellery. We bring the world's finest beauty products directly to you.
@@ -56,23 +65,22 @@ export default function Footer() {
             <ul className="space-y-4 text-sm text-gray-400">
               <li className="flex gap-3">
                 <MapPin size={18} className="text-primary shrink-0" />
-                <span>123 Beauty Avenue, Block C, Banani, Dhaka, Bangladesh</span>
+                <span>{storeAddress}</span>
               </li>
               <li className="flex gap-3">
                 <Phone size={18} className="text-primary shrink-0" />
-                <span>+880 1712-345678</span>
+                <span>{contactPhone}</span>
               </li>
               <li className="flex gap-3">
                 <Mail size={18} className="text-primary shrink-0" />
-                <span>support@anmart.com</span>
+                <span>{contactEmail}</span>
               </li>
             </ul>
           </div>
-
         </div>
 
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} AN Mart. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>

@@ -1,3 +1,4 @@
+import { useSiteConfigStore } from '../../store/useSiteConfigStore';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Heart, User, Search, Menu, Phone, MapPin, LogOut } from 'lucide-react';
@@ -15,6 +16,8 @@ export default function Navbar() {
   
   const cartItemsCount = getTotalItems();
   const wishlistItemsCount = useWishlistStore((state) => state.items.length);
+  const { publishedConfig } = useSiteConfigStore();
+  const storeName = publishedConfig?.branding?.storeName || 'AN Mart';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +68,7 @@ export default function Navbar() {
               </button>
               <Link to="/" className="flex items-center">
                 <span className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#1a1a1a]">
-                  AN <span className="text-[#c2a578]">Mart</span>
+                  {storeName}
                 </span>
               </Link>
             </div>

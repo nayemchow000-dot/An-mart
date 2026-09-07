@@ -159,9 +159,16 @@ export default function ProductDetails() {
           <div className="w-full lg:w-1/2 flex flex-col">
             
             <div className="flex items-center justify-between mb-3">
-              <Link to={`/category/${product.category.toLowerCase()}`} className="text-sm text-primary font-semibold uppercase tracking-wider hover:underline">
-                {product.brand || product.category}
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link to={`/category/${product.category.toLowerCase()}`} className="text-sm text-primary font-semibold uppercase tracking-wider hover:underline">
+                  {product.brand || product.category}
+                </Link>
+                {product.sku && (
+                  <span className="text-xs text-dark-light bg-cream px-2 py-0.5 rounded-full font-medium">
+                    SKU: {product.sku}
+                  </span>
+                )}
+              </div>
               
               <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium">
                 <Star className="fill-current" size={16} />
@@ -261,17 +268,17 @@ export default function ProductDetails() {
                   <Truck size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-dark">Fast Delivery</h4>
-                  <p className="text-xs text-dark-light">All over Bangladesh</p>
+                  <h4 className="font-bold text-sm text-dark">Delivery Time</h4>
+                  <p className="text-xs text-dark-light">{product.deliveryTime || '2-5 Business Days'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-cream/30 p-3 rounded-xl border border-cream">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm">
-                  <ShieldCheck size={20} />
+                  {product.isCodAvailable !== false ? <RotateCcw size={20} /> : <ShieldCheck size={20} />}
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-dark">100% Authentic</h4>
-                  <p className="text-xs text-dark-light">Guaranteed Products</p>
+                  <h4 className="font-bold text-sm text-dark">{product.isCodAvailable !== false ? 'Cash on Delivery' : '100% Authentic'}</h4>
+                  <p className="text-xs text-dark-light">{product.isCodAvailable !== false ? 'Pay when you receive' : 'Guaranteed Products'}</p>
                 </div>
               </div>
             </div>
@@ -279,7 +286,7 @@ export default function ProductDetails() {
             {/* Expandable Sections */}
             <div className="border-t border-cream divide-y divide-cream">
               
-              {/* Description */}
+              {/* Description (English) */}
               <div className="py-2">
                 <button 
                   onClick={() => toggleSection('description')}
@@ -293,6 +300,23 @@ export default function ProductDetails() {
                        dangerouslySetInnerHTML={{ __html: product.description }} />
                 )}
               </div>
+
+              {/* Description (Bangla) */}
+              {product.descriptionBn && (
+                <div className="py-2">
+                  <button 
+                    onClick={() => toggleSection('descriptionBn')}
+                    className="w-full py-4 flex items-center justify-between font-serif font-bold text-lg text-dark hover:text-primary transition-colors"
+                  >
+                    <span>বিস্তারিত বিবরণ (বাংলা)</span>
+                    {expandedSection === 'descriptionBn' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </button>
+                  {expandedSection === 'descriptionBn' && (
+                    <div className="pb-6 prose prose-sm sm:prose-base prose-primary max-w-none text-dark-light animate-in fade-in slide-in-from-top-2 duration-300 font-sans"
+                         dangerouslySetInnerHTML={{ __html: product.descriptionBn }} />
+                  )}
+                </div>
+              )}
 
               {/* Benefits (if exists) */}
               {product.benefits && (
