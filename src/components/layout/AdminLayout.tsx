@@ -76,6 +76,7 @@ export default function AdminLayout() {
     { name: 'SEO', path: '/admin/seo', icon: <Search size={20} /> },
     { name: 'Homepage CMS', path: '/admin/content', icon: <FileText size={20} /> },
     { name: 'Legal Pages', path: '/admin/legal', icon: <Shield size={20} /> },
+    { name: 'Support Settings', path: '/admin/support', icon: <MessageSquare size={20} /> },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
 

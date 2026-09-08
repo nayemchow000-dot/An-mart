@@ -25,6 +25,7 @@ import AdminCustomers from '../pages/admin/Customers';
 import AdminCoupons from '../pages/admin/Coupons';
 import AdminSettings from '../pages/admin/Settings';
 import AdminBrands from '../pages/admin/Brands';
+import AdminSupport from '../pages/admin/Support';
 import HomepageCMS from '../pages/admin/HomepageCMS';
 
 // New Pages
@@ -88,6 +89,7 @@ export default function AppRouter() {
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="coupons" element={<AdminCoupons />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="support" element={<AdminSupport />} />
           <Route path="brands" element={<AdminBrands />} />
           <Route path="reviews" element={<Reviews />} />
           <Route path="offers" element={<Offers />} />

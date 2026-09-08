@@ -1,7 +1,7 @@
 import { useSiteConfigStore } from '../../store/useSiteConfigStore';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, User, Search, Menu, Phone, MapPin, LogOut } from 'lucide-react';
+import { ShoppingBag, Heart, User, Search, Menu, Phone, MapPin, LogOut, X } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import { useWishlistStore } from '../../store/useWishlistStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -13,6 +13,7 @@ export default function Navbar() {
   const { getTotalItems } = useCartStore();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const cartItemsCount = getTotalItems();
   const wishlistItemsCount = useWishlistStore((state) => state.items.length);
@@ -63,7 +64,11 @@ export default function Navbar() {
             
             {/* Mobile Menu & Logo */}
             <div className="flex items-center gap-3 md:gap-0 flex-shrink-0">
-              <button className="md:hidden p-1 text-gray-600 hover:text-[#c2a578] transition-colors -ml-1" aria-label="Menu">
+              <button 
+                className="md:hidden p-1 text-gray-600 hover:text-[#c2a578] transition-colors -ml-1" 
+                aria-label="Menu"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
                 <Menu size={24} strokeWidth={1.5} />
               </button>
               <Link to="/" className="flex items-center">
@@ -194,6 +199,66 @@ export default function Navbar() {
           </nav>
         </div>
       </div>
+      
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[100] bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
+          <div 
+            className="fixed top-0 left-0 bottom-0 w-4/5 max-w-sm bg-white shadow-2xl z-[101] flex flex-col animate-in slide-in-from-left duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-[#FAFAFA]">
+              <span className="font-serif text-xl font-bold tracking-tight text-[#1a1a1a]">
+                {storeName}
+              </span>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto py-4">
+              <nav className="flex flex-col space-y-1 px-4">
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg">Home</Link>
+                <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg">Shop All</Link>
+                <Link to="/category/cosmetics" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg">Cosmetics</Link>
+                <Link to="/category/skincare" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg">Skincare</Link>
+                <Link to="/category/jewellery" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg">Jewellery</Link>
+                <Link to="/track-order" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg flex items-center gap-3">
+                  <MapPin size={18} className="text-[#c2a578]" /> Track Order
+                </Link>
+                <Link to="/support" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-gray-900 font-medium hover:bg-gray-50 rounded-lg flex items-center gap-3">
+                  <Phone size={18} className="text-[#c2a578]" /> Customer Support
+                </Link>
+              </nav>
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 bg-[#FAFAFA]">
+              {isAuthenticated ? (
+                <div className="space-y-3">
+                  <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-900 font-medium px-4 py-2">
+                    <User size={18} className="text-gray-500" /> My Profile
+                  </Link>
+                  {user?.role === 'admin' && (
+                    <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-900 font-medium px-4 py-2">
+                      <Menu size={18} className="text-gray-500" /> Admin Dashboard
+                    </Link>
+                  )}
+                  <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 text-red-600 font-medium px-4 py-2">
+                    <LogOut size={18} /> Logout
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary w-full flex justify-center py-2.5">
+                  Sign In / Register
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
