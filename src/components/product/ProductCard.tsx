@@ -4,6 +4,7 @@ import { Product } from '../../types';
 import { useCartStore } from '../../store/useCartStore';
 import { useWishlistStore } from '../../store/useWishlistStore';
 import { formatPrice } from '../../utils/formatters';
+import { trackAddToCart, generateEventId } from '../../utils/tracking/tiktok';
 import toast from 'react-hot-toast';
 
 interface ProductCardProps {
@@ -19,6 +20,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     addItem({ ...product, cartItemId: `${product.id}-${Date.now()}`, quantity: 1 });
+    
+    const eventId = generateEventId();
+    trackAddToCart(product, 1, eventId);
+    
     toast.success(`${product.title} added to cart`, {
       icon: '🛍️',
       style: {

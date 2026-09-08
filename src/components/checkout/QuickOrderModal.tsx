@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Truck } from 'lucide-react';
 import { Product } from '../../types';
 import { Input } from '../ui/Input';
 import { formatPrice } from '../../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../../config/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
+import { trackInitiateCheckout, trackPurchase, trackPlaceAnOrder, generateEventId } from '../../utils/tracking/tiktok';
 import toast from 'react-hot-toast';
 
 interface QuickOrderModalProps {
@@ -33,6 +34,12 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
   const subtotal = price * quantity;
   const deliveryCharge = formData.division === 'Dhaka' ? 100 : 150;
   const grandTotal = subtotal + deliveryCharge;
+
+  useEffect(() => {
+    if (isOpen) {
+      trackInitiateCheckout([{ ...product, quantity }], grandTotal);
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,7 +81,11 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-
+      
+      const eventId = generateEventId();
+      trackPlaceAnOrder([orderItem], grandTotal, `ORD-${Date.now()}`, eventId);
+      trackPurchase([orderItem], grandTotal, `ORD-${Date.now()}`, eventId);
+      
       toast.success('Order placed successfully!');
       onSuccess();
     } catch (error: any) {

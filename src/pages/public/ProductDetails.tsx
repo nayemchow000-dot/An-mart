@@ -9,6 +9,7 @@ import { formatPrice } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import QuickOrderModal from '../../components/checkout/QuickOrderModal';
 import ProductCard from '../../components/product/ProductCard';
+import { trackViewContent, trackAddToCart, generateEventId } from '../../utils/tracking/tiktok';
 
 export default function ProductDetails() {
   const { slug } = useParams();
@@ -31,6 +32,8 @@ export default function ProductDetails() {
       setActiveImage(0);
       setQuantity(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      trackViewContent(foundProduct);
     }
   }, [slug, products]);
 
@@ -65,6 +68,11 @@ export default function ProductDetails() {
       cartItemId: `${product.id}-${Date.now()}`,
       quantity
     });
+    
+    const eventId = generateEventId();
+    trackAddToCart(product, quantity, eventId);
+    // Note: To properly support Server-side Events API later, we would send this eventId to the server
+    
     toast.success('Added to cart!');
   };
 

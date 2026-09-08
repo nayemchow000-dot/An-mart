@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AppRouter from './routes/AppRouter';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import TikTokPixel from './components/TikTokPixel';
 
 export default function App() {
   // Initialize Supabase Auth listener globally so it runs on all routes, including /admin
@@ -11,6 +12,7 @@ export default function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
+        <TikTokPixel />
         <Toaster 
           position="top-center"
           toastOptions={{

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Truck, CreditCard, Banknote, ShieldCheck } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { formatPrice } from '../../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../../config/supabase';
+import { trackInitiateCheckout, trackPurchase, trackPlaceAnOrder, generateEventId } from '../../utils/tracking/tiktok';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
@@ -35,6 +36,13 @@ export default function Checkout() {
     return null;
   }
 
+  // Track InitiateCheckout on page load if cart has items
+  useEffect(() => {
+    if (items.length > 0) {
+      trackInitiateCheckout(items, grandTotal);
+    }
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -50,7 +58,6 @@ export default function Checkout() {
     }
 
     setLoading(true);
-
     try {
       const orderData = {
         user_id: user?.uid || null,
@@ -71,12 +78,19 @@ export default function Checkout() {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
+      const eventId = generateEventId();
+      // Track PlaceAnOrder for the submission
+      trackPlaceAnOrder(items, grandTotal, `ORD-${Date.now()}`, eventId);
+
       // If payment method is not COD, here we would redirect to payment gateway
       if (formData.paymentMethod !== 'cod') {
         toast.loading('Redirecting to payment gateway...', { duration: 2000 });
         // Simulating payment gateway redirect and return
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
+
+      // Track successful purchase
+      trackPurchase(items, grandTotal, `ORD-${Date.now()}`, eventId);
 
       toast.success('Order placed successfully!');
       clearCart();

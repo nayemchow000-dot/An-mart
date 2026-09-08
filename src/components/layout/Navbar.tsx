@@ -7,6 +7,7 @@ import { useWishlistStore } from '../../store/useWishlistStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../config/supabase';
 import toast from 'react-hot-toast';
+import { trackSearch } from '../../utils/tracking/tiktok';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      trackSearch(searchQuery.trim());
       navigate(`/shop?q=${encodeURIComponent(searchQuery)}`);
     }
   };
