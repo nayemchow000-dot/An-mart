@@ -1,12 +1,17 @@
 import { Helmet } from 'react-helmet-async';
 import { Plus, Tag, Edit, Trash2 } from 'lucide-react';
 import { formatPrice } from '../../utils/formatters';
+import toast from 'react-hot-toast';
 
 export default function AdminCoupons() {
   const mockCoupons = [
     { id: '1', code: 'WELCOME10', discount: '10%', minOrder: 1000, expiry: 'Dec 31, 2024', status: 'Active' },
     { id: '2', code: 'EID500', discount: formatPrice(500), minOrder: 5000, expiry: 'Jun 15, 2024', status: 'Expired' },
   ];
+
+  const handleCreate = () => {
+    toast.error('Coupon creation module will be available in the next update!');
+  };
 
   return (
     <>
@@ -17,7 +22,7 @@ export default function AdminCoupons() {
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Coupons</h1>
-          <button className="btn-primary py-2.5 shadow-sm">
+          <button onClick={handleCreate} className="btn-primary py-2.5 shadow-sm">
             <Plus size={18} className="mr-2" /> Create Coupon
           </button>
         </div>

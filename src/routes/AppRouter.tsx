@@ -10,6 +10,8 @@ import Shop from '../pages/public/Shop';
 import ProductDetails from '../pages/public/ProductDetails';
 import Cart from '../pages/public/Cart';
 import Checkout from '../pages/public/Checkout';
+import TrackOrder from '../pages/public/TrackOrder';
+import Support from '../pages/public/Support';
 
 import Profile from '../pages/customer/Profile';
 
@@ -54,6 +56,8 @@ export default function AppRouter() {
         <Route path="about" element={<Placeholder title="About Us" />} />
         <Route path="contact" element={<Placeholder title="Contact" />} />
         <Route path="faq" element={<Placeholder title="FAQ" />} />
+        <Route path="track-order" element={<TrackOrder />} />
+        <Route path="support" element={<Support />} />
         
         {/* Cart & Checkout */}
         <Route path="cart" element={<Cart />} />

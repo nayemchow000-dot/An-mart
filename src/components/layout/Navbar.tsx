@@ -43,12 +43,12 @@ export default function Navbar() {
       <div className="bg-[#FAFAFA] text-gray-600 text-[11px] md:text-xs py-1.5 border-b border-gray-100 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 hover:text-[#c2a578] cursor-pointer transition-colors">
+            <Link to="/support" className="flex items-center gap-1.5 hover:text-[#c2a578] cursor-pointer transition-colors">
               <Phone size={12} /> Support: +880 1234-567890
-            </span>
-            <span className="flex items-center gap-1.5 hover:text-[#c2a578] cursor-pointer transition-colors">
+            </Link>
+            <Link to="/track-order" className="flex items-center gap-1.5 hover:text-[#c2a578] cursor-pointer transition-colors">
               <MapPin size={12} /> Track Order
-            </span>
+            </Link>
           </div>
           <div className="flex items-center gap-4 font-medium tracking-wide">
             <span className="text-[#c2a578]">Free Delivery on orders over ৳5000!</span>

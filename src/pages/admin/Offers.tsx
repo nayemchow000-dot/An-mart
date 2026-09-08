@@ -1,16 +1,22 @@
 import { Helmet } from 'react-helmet-async';
 import { Plus, Tag, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Offers() {
+  const handleCreate = () => {
+    toast.error('Offer creation module will be available in the next update!');
+  };
+
   return (
     <>
       <Helmet>
         <title>Offers & Promotions | Admin | AN Mart</title>
       </Helmet>
+      
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-serif font-bold text-gray-900">Offers & Promotions</h1>
-          <button className="btn-primary flex items-center gap-2">
+          <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
             <Plus size={18} />
             Create Offer
           </button>
