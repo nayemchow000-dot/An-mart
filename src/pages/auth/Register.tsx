@@ -11,12 +11,13 @@ export default function Register() {
     name: '',
     email: '',
     phone: '',
+    address: '',
     password: '',
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -49,7 +50,7 @@ export default function Register() {
 
       if (authError) throw authError;
 
-      // 2. Create Profile in PostgreSQL (usually handled by a trigger, but we can do it manually if RLS allows or we assume it's created, but for safe migration we will insert it directly)
+      // 2. Create Profile in PostgreSQL
       if (authData.user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -58,14 +59,13 @@ export default function Register() {
             full_name: formData.name,
             email: formData.email,
             phone: formData.phone,
+            address: formData.address,
             role: 'customer',
             updated_at: new Date().toISOString(),
           });
           
         if (profileError) {
           console.warn("Profile creation error:", profileError);
-          // Don't fail the whole registration if profile upsert fails due to RLS, 
-          // as the trigger might have already created it.
         }
       }
 
@@ -108,6 +108,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="John Doe"
             />
+            
             <Input
               label="Email Address"
               name="email"
@@ -117,6 +118,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="you@example.com"
             />
+            
             <Input
               label="Phone Number (BD)"
               name="phone"
@@ -126,24 +128,40 @@ export default function Register() {
               onChange={handleChange}
               placeholder="01XXXXXXXXX"
             />
-            <Input
-              label="Password"
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-            />
-            <Input
-              label="Confirm Password"
-              name="confirmPassword"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-            />
+
+            <div className="w-full flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">Full Address / Location</label>
+              <textarea 
+                name="address"
+                required
+                rows={2}
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="House, Road, Area, City"
+                className="px-4 py-2.5 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+              />
+              <Input
+                label="Confirm Password"
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+              />
+            </div>
 
             <button
               type="submit"
