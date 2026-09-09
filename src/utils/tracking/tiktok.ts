@@ -62,14 +62,19 @@ export const trackTikTokEvent = async (eventName: string, params: any = {}) => {
 
 export const trackViewContent = (product: any, eventId?: string) => {
   if (!product) return;
-  const currentPrice = product.discountPrice || product.price;
+  const currentPrice = Number(product.discountPrice || product.price || 0);
+  const safeId = String(product._id || product.id || 'unknown');
   trackTikTokEvent('ViewContent', {
+    content_id: safeId,
+    content_type: 'product',
+    content_name: product.title || product.name || 'Product',
     contents: [
       {
-        content_id: product.id,
+        content_id: safeId,
         content_type: 'product',
-        content_name: product.title,
-        price: currentPrice
+        content_name: product.title || product.name || 'Product',
+        price: currentPrice,
+        quantity: 1
       }
     ],
     value: currentPrice,
@@ -80,18 +85,22 @@ export const trackViewContent = (product: any, eventId?: string) => {
 
 export const trackAddToCart = (product: any, quantity: number, eventId?: string) => {
   if (!product) return;
-  const currentPrice = product.discountPrice || product.price;
+  const currentPrice = Number(product.discountPrice || product.price || 0);
+  const safeId = String(product._id || product.id || 'unknown');
   trackTikTokEvent('AddToCart', {
+    content_id: safeId,
+    content_type: 'product',
+    content_name: product.title || product.name || 'Product',
     contents: [
       {
-        content_id: product.id,
+        content_id: safeId,
         content_type: 'product',
-        content_name: product.title,
+        content_name: product.title || product.name || 'Product',
         price: currentPrice,
-        quantity: quantity
+        quantity: Number(quantity) || 1
       }
     ],
-    value: currentPrice * quantity,
+    value: currentPrice * (Number(quantity) || 1),
     currency: 'BDT',
     event_id: eventId || generateEventId()
   });
@@ -100,56 +109,64 @@ export const trackAddToCart = (product: any, quantity: number, eventId?: string)
 export const trackInitiateCheckout = (items: any[], totalValue: number, eventId?: string) => {
   if (!items || items.length === 0) return;
   const contents = items.map(item => ({
-    content_id: item.id || item.productId,
+    content_id: String(item._id || item.id || item.productId || 'unknown'),
     content_type: 'product',
-    content_name: item.title,
-    price: item.discountPrice || item.price,
-    quantity: item.quantity || 1
+    content_name: item.title || item.name || 'Product',
+    price: Number(item.discountPrice || item.price || 0),
+    quantity: Number(item.quantity) || 1
   }));
+  const contentIds = items.map(item => String(item._id || item.id || item.productId || 'unknown'));
 
   trackTikTokEvent('InitiateCheckout', {
+    content_id: contentIds.length === 1 ? contentIds[0] : contentIds,
+    content_type: 'product',
     contents,
-    value: totalValue,
+    value: Number(totalValue),
     currency: 'BDT',
     event_id: eventId || generateEventId()
   });
 };
 
-export const trackPlaceAnOrder = (items: any[], totalValue: number, orderId: string, eventId?: string) => {
-   if (!items || items.length === 0) return;
+export const trackPlaceAnOrder = (items: any[], totalValue: number, orderId: string, eventId?: string) => { 
+  if (!items || items.length === 0) return;
   const contents = items.map(item => ({
-    content_id: item.id || item.productId,
+    content_id: String(item._id || item.id || item.productId || 'unknown'),
     content_type: 'product',
-    content_name: item.title,
-    price: item.discountPrice || item.price,
-    quantity: item.quantity || 1
+    content_name: item.title || item.name || 'Product',
+    price: Number(item.discountPrice || item.price || 0),
+    quantity: Number(item.quantity) || 1
   }));
+  const contentIds = items.map(item => String(item._id || item.id || item.productId || 'unknown'));
 
   trackTikTokEvent('PlaceAnOrder', {
+    content_id: contentIds.length === 1 ? contentIds[0] : contentIds,
+    content_type: 'product',
     contents,
-    value: totalValue,
+    value: Number(totalValue),
     currency: 'BDT',
     event_id: eventId || generateEventId(),
-    order_id: orderId
+    order_id: String(orderId)
   });
 };
 
 export const trackPurchase = (items: any[], totalValue: number, orderId: string, eventId?: string) => {
   if (!items || items.length === 0) return;
   const contents = items.map(item => ({
-    content_id: item.id || item.productId,
+    content_id: String(item._id || item.id || item.productId || 'unknown'),
     content_type: 'product',
-    content_name: item.title,
-    price: item.discountPrice || item.price,
-    quantity: item.quantity || 1
+    content_name: item.title || item.name || 'Product',
+    price: Number(item.discountPrice || item.price || 0),
+    quantity: Number(item.quantity) || 1
   }));
 
   trackTikTokEvent('CompletePayment', { // TikTok's standard Purchase event
+    content_id: String(orderId),
+    content_type: 'product',
     contents,
-    value: totalValue,
+    value: Number(totalValue),
     currency: 'BDT',
     event_id: eventId || generateEventId(),
-    order_id: orderId
+    order_id: String(orderId)
   });
 };
 
