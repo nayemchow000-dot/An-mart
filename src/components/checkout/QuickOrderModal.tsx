@@ -28,8 +28,6 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
     paymentMethod: 'cod'
   });
 
-  if (!isOpen) return null;
-
   const price = product.discountPrice || product.price;
   const subtotal = price * quantity;
   const deliveryCharge = formData.division === 'Dhaka' ? 100 : 150;
@@ -40,6 +38,8 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
       trackInitiateCheckout([{ ...product, quantity }], grandTotal);
     }
   }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

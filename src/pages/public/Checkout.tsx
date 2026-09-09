@@ -31,8 +31,13 @@ export default function Checkout() {
   const deliveryCharge = formData.division === 'Dhaka' ? 100 : 150;
   const grandTotal = subtotal + deliveryCharge;
 
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [items.length, navigate]);
+
   if (items.length === 0) {
-    navigate('/cart');
     return null;
   }
 
