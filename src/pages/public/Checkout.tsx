@@ -37,16 +37,16 @@ export default function Checkout() {
     }
   }, [items.length, navigate]);
 
-  if (items.length === 0) {
-    return null;
-  }
-
   // Track InitiateCheckout on page load if cart has items
   useEffect(() => {
     if (items.length > 0) {
       trackInitiateCheckout(items, grandTotal);
     }
-  }, []);
+  }, []); // Intentionally running only once on mount for the checkout view
+
+  if (items.length === 0) {
+    return null;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
