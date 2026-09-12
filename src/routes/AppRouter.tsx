@@ -27,6 +27,7 @@ import AdminSettings from '../pages/admin/Settings';
 import AdminBrands from '../pages/admin/Brands';
 import AdminSupport from '../pages/admin/Support';
 import HomepageCMS from '../pages/admin/HomepageCMS';
+import SmartImporter from '../pages/admin/SmartImporter';
 
 // New Pages
 import Reviews from '../pages/admin/Reviews';
@@ -98,6 +99,7 @@ export default function AppRouter() {
           <Route path="seo" element={<SEO />} />
           <Route path="content" element={<HomepageCMS />} />
           <Route path="legal" element={<LegalPages />} />
+          <Route path="smart-importer" element={<SmartImporter />} />
         </Route>
       </Route>
     </Routes>

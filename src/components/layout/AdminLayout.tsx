@@ -17,7 +17,8 @@ import {
   Layout,
   Search,
   FileText,
-  Shield
+  Shield,
+  Bot
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -63,6 +64,7 @@ export default function AdminLayout() {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={20} /> },
+    { name: 'Smart Importer', path: '/admin/smart-importer', icon: <Bot size={20} /> },
     { name: 'Products', path: '/admin/products', icon: <ShoppingBag size={20} /> },
     { name: 'Categories', path: '/admin/categories', icon: <Layers size={20} /> },
     { name: 'Brands', path: '/admin/brands', icon: <Award size={20} /> },
