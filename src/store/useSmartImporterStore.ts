@@ -152,6 +152,12 @@ export const useSmartImporterStore = create<ImporterState>((set, get) => ({
           }
         }
 
+        
+        // 4. Generate AI Creatives (Skipped per user request)
+        if (!originalImages.length || !transformedProduct.images || transformedProduct.images.length === 0) {
+          updateItem(item.id, { errorMessage: 'Product imported, but no usable authentic product image was found. Please upload a product image manually.' });
+        }
+
         updateItem(item.id, { status: 'ready' });
 
       } catch (error: any) {

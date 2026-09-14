@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Heart, Minus, Plus, ShoppingBag, Truck, RotateCcw, ShieldCheck, Star, ChevronDown, ChevronUp, Zap, Clock } from 'lucide-react';
 import { useProductStore } from '../../store/useProductStore';
+import { useLandingPageStore } from '../../store/useLandingPageStore';
+import ProductLandingPage from './ProductLandingPage';
 import { useCartStore } from '../../store/useCartStore';
 import { useWishlistStore } from '../../store/useWishlistStore';
 import { formatPrice } from '../../utils/formatters';
@@ -15,6 +17,12 @@ export default function ProductDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { products, isLoading } = useProductStore();
+  const { pages, initializeStore: initLandingPages } = useLandingPageStore();
+
+  useEffect(() => {
+    const unsubscribe = initLandingPages();
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [initLandingPages]);
   
   const [product, setProduct] = useState(products.find(p => p.slug === slug));
   const [activeImage, setActiveImage] = useState(0);
@@ -45,14 +53,18 @@ export default function ProductDetails() {
     );
   }
 
-  if (!product) {
+    if (!product) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-        <h2 className="text-3xl font-serif font-bold mb-4 text-dark">Product Not Found</h2>
-        <p className="text-dark-light mb-8 max-w-md">The product you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+      <div className="flex flex-col justify-center items-center h-96 gap-4">
+        <div className="text-xl text-gray-500">Product not found</div>
         <button onClick={() => navigate('/shop')} className="btn-primary">Return to Shop</button>
       </div>
     );
+  }
+
+  const activeLandingPage = pages.find(p => p.id === product.id && p.status === 'active');
+  if (activeLandingPage) {
+    return <ProductLandingPage />;
   }
 
   const isInWishlist = wishlistItems.some(item => item.id === product.id);

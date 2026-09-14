@@ -384,7 +384,7 @@ export default function SmartImporter() {
                                 {item.status === 'failed' && <XCircle size={14} />}
                                 {item.status === 'ready' && <CheckCircle2 size={14} />}
                                 {item.status === 'imported' && <CheckCircle2 size={14} />}
-                                {['analyzing', 'extracting', 'processing', 'uploading_images'].includes(item.status) && <RefreshCw size={14} className="animate-spin" />}
+                                {['analyzing', 'extracting', 'processing', 'uploading_images', 'generating_hero', 'generating_details', 'generating_branding', 'generating_multi_view'].includes(item.status) && <RefreshCw size={14} className="animate-spin" />}
                                 {item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </span>
                               {item.errorMessage && (

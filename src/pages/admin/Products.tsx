@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ExternalLink, LayoutTemplate } from 'lucide-react';
 import { useProductStore } from '../../store/useProductStore';
 import { formatPrice } from '../../utils/formatters';
 import toast from 'react-hot-toast';
@@ -136,6 +136,13 @@ export default function AdminProducts() {
                         </Link>
                         <Link to={`/admin/products/edit/${product.id}`} className="p-1.5 text-gray-400 hover:text-primary transition-colors" title="Edit">
                           <Edit size={16} />
+                        </Link>
+                        <Link 
+                          to={`/admin/landing-builder/${product.id}`}
+                          className="p-1.5 text-gray-400 hover:text-green-500 transition-colors"
+                          title="Landing Page Builder"
+                        >
+                          <LayoutTemplate size={16} />
                         </Link>
                         <button 
                           onClick={() => handleDelete(product.id, product.title)}

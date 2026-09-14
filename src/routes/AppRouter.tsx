@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import AdminLayout from '../components/layout/AdminLayout';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -34,6 +34,8 @@ import Reviews from '../pages/admin/Reviews';
 import Offers from '../pages/admin/Offers';
 import MediaLibrary from '../pages/admin/MediaLibrary';
 import LandingPages from '../pages/admin/LandingPages';
+import LandingPageBuilder from '../pages/admin/LandingPageBuilder';
+import ProductLandingPage from '../pages/public/ProductLandingPage';
 import SEO from '../pages/admin/SEO';
 import LegalPages from '../pages/admin/LegalPages';
 
@@ -44,6 +46,12 @@ const Placeholder = ({ title }: { title: string }) => (
   </div>
 );
 
+
+const LandingRedirect = () => {
+  const { slug } = useParams();
+  return <Navigate to={`/product/${slug}`} replace />;
+};
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -53,6 +61,7 @@ export default function AppRouter() {
         <Route path="shop" element={<Shop />} />
         <Route path="category/:slug" element={<Shop />} />
         <Route path="product/:slug" element={<ProductDetails />} />
+        <Route path="landing/:slug" element={<LandingRedirect />} />
         
         {/* Static Pages */}
         <Route path="about" element={<Placeholder title="About Us" />} />
@@ -75,6 +84,7 @@ export default function AppRouter() {
           <Route path="wishlist" element={<Placeholder title="Wishlist" />} />
         </Route>
         
+        
         <Route path="*" element={<Placeholder title="404 - Not Found" />} />
       </Route>
 
@@ -96,12 +106,14 @@ export default function AppRouter() {
           <Route path="offers" element={<Offers />} />
           <Route path="media" element={<MediaLibrary />} />
           <Route path="landing-pages" element={<LandingPages />} />
+          <Route path="landing-builder/:productId" element={<LandingPageBuilder />} />
           <Route path="seo" element={<SEO />} />
           <Route path="content" element={<HomepageCMS />} />
           <Route path="legal" element={<LegalPages />} />
           <Route path="smart-importer" element={<SmartImporter />} />
         </Route>
       </Route>
+      
     </Routes>
   );
 }
