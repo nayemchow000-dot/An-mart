@@ -16,13 +16,14 @@ import { trackViewContent, trackAddToCart, generateEventId } from '../../utils/t
 export default function ProductDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { products, isLoading } = useProductStore();
-  const { pages, initializeStore: initLandingPages } = useLandingPageStore();
+  const { products, isLoading: productsLoading } = useProductStore();
+  const { pages, isLoading: pagesLoading, initializeStore: initLandingPages } = useLandingPageStore();
 
   useEffect(() => {
     const unsubscribe = initLandingPages();
     return () => { if (unsubscribe) unsubscribe(); };
   }, [initLandingPages]);
+
   
   const [product, setProduct] = useState(products.find(p => p.slug === slug));
   const [activeImage, setActiveImage] = useState(0);
@@ -45,7 +46,7 @@ export default function ProductDetails() {
     }
   }, [slug, products]);
 
-  if (isLoading) {
+  if (productsLoading || pagesLoading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-cream-dark border-t-primary rounded-full animate-spin"></div>

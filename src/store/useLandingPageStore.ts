@@ -48,8 +48,18 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
         }
         
         if (data && mounted) {
-          set({ pages: data as LandingPage[], isLoading: false });
-          localStorage.setItem('anmart_landing_pages', JSON.stringify(data));
+          const localStr = localStorage.getItem('anmart_landing_pages');
+          let merged = data as LandingPage[];
+          if (localStr) {
+            try {
+               const local = JSON.parse(localStr) as LandingPage[];
+               const remoteIds = new Set(merged.map(p => p.id));
+               const localOnly = local.filter(p => !remoteIds.has(p.id));
+               merged = [...merged, ...localOnly];
+            } catch (e) {}
+          }
+          set({ pages: merged, isLoading: false });
+          localStorage.setItem('anmart_landing_pages', JSON.stringify(merged));
         }
       } catch (error) {
         console.warn("Fetch landing_pages exception:", error);
