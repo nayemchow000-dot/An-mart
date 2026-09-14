@@ -73,7 +73,7 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
 
     let channel: any = null;
     if (isSupabaseConfigured) {
-      channel = supabase.channel('landing_pages_changes')
+      channel = supabase.channel('landing_pages_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'landing_pages' }, fetchPages)
         .subscribe();
     }

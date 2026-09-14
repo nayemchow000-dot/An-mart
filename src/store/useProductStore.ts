@@ -63,7 +63,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
     let channel: any = null;
     if (isSupabaseConfigured) {
-      channel = supabase.channel('products_changes')
+      channel = supabase.channel('products_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts)
         .subscribe();
     }

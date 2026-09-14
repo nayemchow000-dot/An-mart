@@ -43,7 +43,7 @@ export const useCategoryStore = create<CategoryState>((set) => ({
 
     let channel: any = null;
     if (isSupabaseConfigured) {
-      channel = supabase.channel('categories_changes')
+      channel = supabase.channel('categories_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
         .subscribe();
     }

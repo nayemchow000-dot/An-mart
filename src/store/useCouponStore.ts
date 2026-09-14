@@ -56,7 +56,7 @@ export const useCouponStore = create<CouponState>((set) => ({
 
     let channel: any = null;
     if (isSupabaseConfigured) {
-      channel = supabase.channel('coupons_changes')
+      channel = supabase.channel('coupons_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, fetchCoupons)
         .subscribe();
     }

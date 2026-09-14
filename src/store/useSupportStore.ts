@@ -94,11 +94,11 @@ export const useSupportStore = create<SupportState>((set, get) => ({
     let channelMessages: any = null;
     
     if (isSupabaseConfigured) {
-      channelSettings = supabase.channel('support_settings_changes')
+      channelSettings = supabase.channel('support_settings_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'support_settings' }, fetchData)
         .subscribe();
         
-      channelMessages = supabase.channel('support_messages_changes')
+      channelMessages = supabase.channel('support_messages_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, fetchData)
         .subscribe();
     }

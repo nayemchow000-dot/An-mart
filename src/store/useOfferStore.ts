@@ -54,7 +54,7 @@ export const useOfferStore = create<OfferState>((set) => ({
 
     let channel: any = null;
     if (isSupabaseConfigured) {
-      channel = supabase.channel('offers_changes')
+      channel = supabase.channel('offers_changes_' + Math.random().toString(36).substring(7))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, fetchOffers)
         .subscribe();
     }
