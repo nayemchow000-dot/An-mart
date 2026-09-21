@@ -12,7 +12,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
 // Initialize Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
 
 const productSchema: Schema = {
   type: Type.OBJECT,
@@ -100,41 +107,105 @@ app.post('/api/importer/extract', async (req, res) => {
     ${JSON.stringify(topImages)}
     `;
 
-    let result;
-    try {
-        result = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: productSchema,
-            temperature: 0.1
-          }
-        });
-    } catch (apiErr: any) {
-        const errStr = String(apiErr);
-        if (errStr.includes('503') || errStr.includes('UNAVAILABLE') || errStr.includes('429')) {
-            console.log('[API] 3.8-flash overloaded/limited, trying 3.6-flash fallback...');
-            try {
-                result = await ai.models.generateContent({
-                  model: 'gemini-3.6-flash',
-                  contents: prompt,
-                  config: {
-                    responseMimeType: 'application/json',
-                    responseSchema: productSchema,
-                    temperature: 0.1
-                  }
-                });
-            } catch (fallbackErr: any) {
-                console.log('[API] 3.6-flash also failed.');
-                throw fallbackErr;
+    let parsedData: any = null;
+    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+    let lastApiError: any = null;
+
+    for (const modelName of modelsToTry) {
+      // Try each model
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          console.log(`[API] Attempting extraction with ${modelName} (attempt ${attempt})...`);
+          const result = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: productSchema,
+              temperature: 0.1
             }
-        } else {
-            throw apiErr;
+          });
+
+          if (result && result.text) {
+            parsedData = JSON.parse(result.text);
+            console.log(`[API] Successfully extracted product using ${modelName}`);
+            break;
+          }
+        } catch (apiErr: any) {
+          lastApiError = apiErr;
+          const errStr = String(apiErr) + ' ' + (apiErr?.message || '');
+          const isTemporary = errStr.includes('503') || errStr.includes('UNAVAILABLE') || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED');
+          console.log(`[API] ${modelName} busy/unavailable (attempt ${attempt}), checking fallback...`);
+
+          if (isTemporary && attempt === 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            break;
+          }
         }
+      }
+
+      if (parsedData) {
+        break;
+      }
     }
 
-    const parsedData = JSON.parse(result.text || '{}');
+    // If Gemini models all experienced temporary 503/429 spikes or were unavailable,
+    // gracefully fall back to heuristic extraction rather than crashing with 500
+    if (!parsedData) {
+      console.warn('[API] All Gemini models were unavailable or rate-limited. Falling back to heuristic HTML extraction.');
+      
+      const ogTitle = $('meta[property="og:title"]').attr('content');
+      const h1Title = $('h1').first().text().trim();
+      const pageTitle = $('title').text().trim();
+      const title = ogTitle || h1Title || pageTitle || 'Imported Product';
+
+      const ogDesc = $('meta[property="og:description"]').attr('content');
+      const metaDesc = $('meta[name="description"]').attr('content');
+      const desc = ogDesc || metaDesc || cleanText.substring(0, 500);
+
+      const ogBrand = $('meta[property="og:site_name"]').attr('content') || $('meta[name="brand"]').attr('content') || '';
+
+      let price = 0;
+      const metaPrice = $('meta[property="product:price:amount"]').attr('content') || $('meta[property="og:price:amount"]').attr('content');
+      if (metaPrice) {
+        price = parseFloat(metaPrice.replace(/[^\d.]/g, '')) || 0;
+      }
+      if (!price) {
+        const priceMatch = cleanText.match(/(?:৳|BDT|TK\.?|Price:?)\s*([\d,]+(?:\.\d{1,2})?)/i);
+        if (priceMatch && priceMatch[1]) {
+          price = parseFloat(priceMatch[1].replace(/,/g, '')) || 0;
+        }
+      }
+
+      const features: string[] = [];
+      $('ul li').each((_, el) => {
+        const txt = $(el).text().trim();
+        if (txt.length > 5 && txt.length < 150 && features.length < 6) {
+          features.push(txt);
+        }
+      });
+
+      parsedData = {
+        title,
+        titleBn: title,
+        brand: ogBrand,
+        sku: '',
+        category: '',
+        shortDescription: desc.substring(0, 160),
+        description: desc,
+        descriptionBn: desc,
+        ingredients: '',
+        benefits: '',
+        howToUse: '',
+        price: price || 1000,
+        discountPrice: undefined,
+        stockStatus: 'in_stock',
+        images: topImages,
+        features
+      };
+    }
+
     parsedData.sourceUrl = url;
     res.json(parsedData);
 
@@ -233,6 +304,93 @@ app.post('/api/importer/generate-creative', async (req, res) => {
     }
     console.error('Creative generation error:', error.message);
     res.status(500).json({ error: error.message || 'Failed to generate creative' });
+  }
+});
+
+app.post('/api/importer/upload-image', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    const cloudName = req.body.cloudName || process.env.VITE_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = req.body.uploadPreset || process.env.VITE_CLOUDINARY_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET;
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'imageUrl is required' });
+    }
+
+    if (!cloudName || !uploadPreset) {
+      return res.json({ secure_url: imageUrl, skipped: true, reason: 'Cloudinary not configured' });
+    }
+
+    // Step 1: Attempt direct upload to Cloudinary using remote URL
+    try {
+      const directForm = new FormData();
+      directForm.append('file', imageUrl);
+      directForm.append('upload_preset', uploadPreset);
+
+      const directRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+        method: 'POST',
+        body: directForm,
+      });
+
+      if (directRes.ok) {
+        const directData = await directRes.json();
+        if (directData.secure_url) {
+          return res.json({ secure_url: directData.secure_url, method: 'direct' });
+        }
+      } else {
+        const errText = await directRes.text();
+        console.warn(`[Cloudinary] Direct remote fetch failed for ${imageUrl}: ${errText.substring(0, 150)}`);
+      }
+    } catch (directErr) {
+      console.warn(`[Cloudinary] Direct upload failed, falling back to server buffer fetch:`, directErr);
+    }
+
+    // Step 2: If direct remote fetch failed (e.g. 403 Forbidden, bot protection, CORS),
+    // fetch the image via our server (with browser headers) and upload as Base64/Buffer to Cloudinary
+    try {
+      const imgRes = await fetch(imageUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        }
+      });
+
+      if (imgRes.ok) {
+        const arrayBuffer = await imgRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+        const base64Data = buffer.toString('base64');
+        const dataUri = `data:${mimeType};base64,${base64Data}`;
+
+        const bufferForm = new FormData();
+        bufferForm.append('file', dataUri);
+        bufferForm.append('upload_preset', uploadPreset);
+
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+          method: 'POST',
+          body: bufferForm,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.secure_url) {
+            return res.json({ secure_url: uploadData.secure_url, method: 'proxied_buffer' });
+          }
+        } else {
+          const bufferErrText = await uploadRes.text();
+          console.warn(`[Cloudinary] Buffer upload failed: ${bufferErrText.substring(0, 150)}`);
+        }
+      }
+    } catch (bufferErr) {
+      console.warn(`[Cloudinary] Server fetch error for ${imageUrl}:`, bufferErr);
+    }
+
+    // Step 3: Gracefully return original imageUrl so the import never fails or loses images
+    return res.json({ secure_url: imageUrl, fallback: true });
+
+  } catch (error: any) {
+    console.error('[API] /api/importer/upload-image error:', error);
+    res.json({ secure_url: req.body?.imageUrl || '', fallback: true, error: error.message });
   }
 });
 

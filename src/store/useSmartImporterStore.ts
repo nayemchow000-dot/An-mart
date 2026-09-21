@@ -77,8 +77,8 @@ export const useSmartImporterStore = create<ImporterState>((set, get) => ({
     
     set({ isImporting: true });
 
-    // Process concurrently with a limit of 3
-    const CONCURRENCY = 3;
+    // Process items with controlled pacing to prevent Gemini rate/demand spikes
+    const CONCURRENCY = 1;
     const processItem = async (item: ImportItem) => {
       try {
         updateItem(item.id, { status: 'analyzing' });
@@ -129,27 +129,33 @@ export const useSmartImporterStore = create<ImporterState>((set, get) => ({
           const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
           const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
           
+          let finalImages: string[] = [];
           if (cloudName && uploadPreset) {
-            const uploadedUrls = [];
             for (const imgUrl of originalImages) {
               try {
                 const secureUrl = await uploadRemoteImageToCloudinary(imgUrl, cloudName, uploadPreset);
-                uploadedUrls.push(secureUrl);
+                finalImages.push(secureUrl || imgUrl);
               } catch (e) {
-                console.warn(`Failed to upload image ${imgUrl}`, e);
+                console.warn(`Failed to upload image ${imgUrl}, keeping original URL:`, e);
+                finalImages.push(imgUrl);
               }
             }
-            
-            transformedProduct.images = uploadedUrls;
-            if (uploadedUrls.length > 0) transformedProduct.thumbnail = uploadedUrls[0];
-            
-            updateItem(item.id, { 
-              importedImages: uploadedUrls,
-              productData: transformedProduct
-            });
           } else {
-            console.warn("Cloudinary not configured. Skipping image upload.");
+            console.warn("Cloudinary not configured. Using original image URLs.");
+            finalImages = originalImages;
           }
+          
+          if (finalImages.length === 0) {
+            finalImages = originalImages;
+          }
+
+          transformedProduct.images = finalImages;
+          if (finalImages.length > 0) transformedProduct.thumbnail = finalImages[0];
+          
+          updateItem(item.id, { 
+            importedImages: finalImages,
+            productData: transformedProduct
+          });
         }
 
         
@@ -168,10 +174,13 @@ export const useSmartImporterStore = create<ImporterState>((set, get) => ({
       }
     };
 
-    // Execute with concurrency
+    // Execute with controlled concurrency
     for (let i = 0; i < pendingItems.length; i += CONCURRENCY) {
       const chunk = pendingItems.slice(i, i + CONCURRENCY);
       await Promise.all(chunk.map(processItem));
+      if (i + CONCURRENCY < pendingItems.length) {
+        await new Promise(r => setTimeout(r, 600));
+      }
     }
 
     set({ isImporting: false });

@@ -36,24 +36,46 @@ export const extractProductData = async (url: string): Promise<any> => {
 
 export const uploadRemoteImageToCloudinary = async (imageUrl: string, cloudName: string, uploadPreset: string): Promise<string> => {
   try {
-    // Cloudinary's unsigned upload endpoint supports passing a remote URL as the 'file' parameter.
+    // 1. Try our server-side smart upload route which proxies and buffers image data to bypass 403 bot blocks
+    try {
+      const response = await fetch('/api/importer/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl, cloudName, uploadPreset }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.secure_url) {
+          return data.secure_url;
+        }
+      }
+    } catch (serverErr) {
+      console.warn('[Importer] Server image upload route attempt failed, trying direct upload:', serverErr);
+    }
+
+    // 2. Direct client fallback attempt
     const formData = new FormData();
     formData.append('file', imageUrl);
     formData.append('upload_preset', uploadPreset);
 
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+    const directResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
       method: 'POST',
       body: formData,
     });
 
-    if (!response.ok) {
-      throw new Error('Cloudinary upload failed for remote URL');
+    if (directResponse.ok) {
+      const data = await directResponse.json();
+      if (data && data.secure_url) {
+        return data.secure_url;
+      }
     }
 
-    const data = await response.json();
-    return data.secure_url;
+    // 3. Graceful fallback: return original imageUrl rather than throwing an error
+    console.warn(`[Cloudinary] Remote upload could not process ${imageUrl}. Retaining original image URL.`);
+    return imageUrl;
   } catch (error) {
-    console.error('Error uploading remote image to Cloudinary:', error);
-    throw error;
+    console.warn('[Cloudinary] Upload exception, retaining original URL:', error);
+    return imageUrl;
   }
 };
