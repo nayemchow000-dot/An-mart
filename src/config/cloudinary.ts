@@ -22,7 +22,7 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
     if (import.meta.env.PROD) {
       throw new Error("Cloudinary configuration missing. Cannot upload images in production.");
     }
-    
+      
     return URL.createObjectURL(file);
   }
 
