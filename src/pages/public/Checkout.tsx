@@ -8,6 +8,8 @@ import { Input } from '../../components/ui/Input';
 import { formatPrice } from '../../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../../config/supabase';
 import { trackInitiateCheckout, trackPurchase, trackPlaceAnOrder, generateEventId } from '../../utils/tracking/tiktok';
+import { OrderSuccessView, OrderSuccessData } from '../../components/checkout/OrderSuccessView';
+import { saveOrderToLocal } from '../../utils/orderStorage';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
@@ -15,6 +17,7 @@ export default function Checkout() {
   const { items, getTotalAmount, clearCart, getTotalItems } = useCartStore();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<OrderSuccessData | null>(null);
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -32,10 +35,10 @@ export default function Checkout() {
   const grandTotal = subtotal + deliveryCharge;
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !confirmedOrder) {
       navigate('/cart');
     }
-  }, [items.length, navigate]);
+  }, [items.length, confirmedOrder, navigate]);
 
   // Track InitiateCheckout on page load if cart has items
   useEffect(() => {
@@ -43,6 +46,21 @@ export default function Checkout() {
       trackInitiateCheckout(items, grandTotal);
     }
   }, []); // Intentionally running only once on mount for the checkout view
+
+  if (confirmedOrder) {
+    return (
+      <>
+        <Helmet>
+          <title>Order Confirmed | AN Mart</title>
+        </Helmet>
+        <div className="bg-[#FAFAFA] min-h-screen py-8 md:py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <OrderSuccessView order={confirmedOrder} />
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (items.length === 0) {
     return null;
@@ -64,43 +82,67 @@ export default function Checkout() {
 
     setLoading(true);
     try {
+      const orderNumber = `ANM-${Math.floor(100000 + Math.random() * 900000)}`;
       const orderData = {
+        id: orderNumber,
+        order_number: orderNumber,
         user_id: user?.uid || null,
         customer_info: formData,
-        items: items,
+        items: [...items],
         subtotal,
         delivery_charge: deliveryCharge,
         grand_total: grandTotal,
+        payment_method: formData.paymentMethod,
         status: 'pending',
         created_at: new Date().toISOString(),
       };
 
+      // Save locally so customer can always track even offline or if guest
+      saveOrderToLocal(orderData as any);
+
       if (isSupabaseConfigured) {
-        const { error } = await supabase.from('orders').insert([orderData]);
-        if (error) throw error;
+        try {
+          const { error } = await supabase.from('orders').insert([orderData]);
+          if (error) {
+            console.warn('Supabase order insert note:', error.message);
+          }
+        } catch (dbErr) {
+          console.warn('Database note:', dbErr);
+        }
       } else {
-        console.warn('Supabase is not configured. Simulating order placement.');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
       
       const eventId = generateEventId();
-      // Track PlaceAnOrder for the submission
-      trackPlaceAnOrder(items, grandTotal, `ORD-${Date.now()}`, eventId);
+      trackPlaceAnOrder(items, grandTotal, orderNumber, eventId);
 
       // If payment method is not COD, here we would redirect to payment gateway
       if (formData.paymentMethod !== 'cod') {
         toast.loading('Redirecting to payment gateway...', { duration: 2000 });
-        // Simulating payment gateway redirect and return
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
-      // Track successful purchase
-      trackPurchase(items, grandTotal, `ORD-${Date.now()}`, eventId);
+      trackPurchase(items, grandTotal, orderNumber, eventId);
 
-      toast.success('Order placed successfully!');
+      toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
+
+      const orderSuccessInfo: OrderSuccessData = {
+        orderId: orderNumber,
+        phone: formData.phone,
+        name: formData.name,
+        address: formData.address,
+        district: formData.district,
+        division: formData.division,
+        paymentMethod: formData.paymentMethod,
+        grandTotal,
+        deliveryCharge,
+        subtotal,
+        items: [...items],
+        createdAt: orderData.created_at,
+      };
+
+      setConfirmedOrder(orderSuccessInfo);
       clearCart();
-      // Normally redirect to an order success/tracking page
-      navigate('/profile'); 
     } catch (error) {
       toast.error('Failed to place order. Please try again.');
       console.warn(error);

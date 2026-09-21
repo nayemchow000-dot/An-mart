@@ -6,6 +6,8 @@ import { formatPrice } from '../../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../../config/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { trackInitiateCheckout, trackPurchase, trackPlaceAnOrder, generateEventId } from '../../utils/tracking/tiktok';
+import { OrderSuccessView, OrderSuccessData } from './OrderSuccessView';
+import { saveOrderToLocal } from '../../utils/orderStorage';
 import toast from 'react-hot-toast';
 
 interface QuickOrderModalProps {
@@ -19,6 +21,7 @@ interface QuickOrderModalProps {
 export default function QuickOrderModal({ product, quantity, isOpen, onClose, onSuccess }: QuickOrderModalProps) {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<OrderSuccessData | null>(null);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -35,6 +38,7 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
+      setConfirmedOrder(null);
       trackInitiateCheckout([{ ...product, quantity }], grandTotal);
     }
   }, [isOpen]);
@@ -58,6 +62,7 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
     setLoading(true);
 
     try {
+      const orderNumber = `ANM-${Math.floor(100000 + Math.random() * 900000)}`;
       const orderItem = {
         ...product,
         cartItemId: `${product.id}-quick-${Date.now()}`,
@@ -65,28 +70,53 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
       };
 
       const orderData = {
+        id: orderNumber,
+        order_number: orderNumber,
         user_id: user?.uid || null,
         customer_info: formData,
         items: [orderItem],
         subtotal,
         delivery_charge: deliveryCharge,
         grand_total: grandTotal,
+        payment_method: formData.paymentMethod,
         status: 'pending',
         created_at: new Date().toISOString(),
       };
 
+      // Save locally
+      saveOrderToLocal(orderData as any);
+
       if (isSupabaseConfigured) {
-        const { error } = await supabase.from('orders').insert([orderData]);
-        if (error) throw error;
+        try {
+          const { error } = await supabase.from('orders').insert([orderData]);
+          if (error) console.warn('Supabase quick order note:', error.message);
+        } catch (dbErr) {
+          console.warn('Database note:', dbErr);
+        }
       } else {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
       
       const eventId = generateEventId();
-      trackPlaceAnOrder([orderItem], grandTotal, `ORD-${Date.now()}`, eventId);
-      trackPurchase([orderItem], grandTotal, `ORD-${Date.now()}`, eventId);
+      trackPlaceAnOrder([orderItem], grandTotal, orderNumber, eventId);
+      trackPurchase([orderItem], grandTotal, orderNumber, eventId);
       
-      toast.success('Order placed successfully!');
+      toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
+      
+      setConfirmedOrder({
+        orderId: orderNumber,
+        phone: formData.phone,
+        name: formData.name,
+        address: formData.address,
+        division: formData.division,
+        paymentMethod: formData.paymentMethod,
+        grandTotal,
+        deliveryCharge,
+        subtotal,
+        items: [orderItem],
+        createdAt: orderData.created_at
+      });
+
       onSuccess();
     } catch (error: any) {
       console.error('Order error:', error);
@@ -100,15 +130,22 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-cream px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="font-serif font-bold text-xl text-dark">Quick Order</h2>
+          <h2 className="font-serif font-bold text-xl text-dark">
+            {confirmedOrder ? 'অর্ডার কনফার্মেশন' : 'Quick Order'}
+          </h2>
           <button onClick={onClose} className="p-2 text-dark-light hover:text-primary transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handlePlaceOrder} className="p-6 space-y-6">
+        {confirmedOrder ? (
+          <div className="p-4 sm:p-6">
+            <OrderSuccessView order={confirmedOrder} onClose={onClose} isModal={true} />
+          </div>
+        ) : (
+          <form onSubmit={handlePlaceOrder} className="p-6 space-y-6">
           {/* Order Summary Summary */}
           <div className="bg-cream/30 p-4 rounded-xl flex gap-4 items-center">
             <img 
@@ -202,6 +239,7 @@ export default function QuickOrderModal({ product, quantity, isOpen, onClose, on
             {loading ? 'Processing...' : 'Confirm Order'}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

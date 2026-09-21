@@ -35,7 +35,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-[#FAFAFA] overflow-hidden group">
         {slides.length > 0 ? (
-          <div className="relative h-[80vh] md:h-[600px] lg:h-[700px] w-full">
+          <div className="relative w-full aspect-[16/9] xs:aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[550px] lg:h-[650px] min-h-[220px] max-h-[85vh] bg-[#111111]">
             {slides.map((slide: any, index: number) => (
               <div
                 key={slide.id}
@@ -43,28 +43,39 @@ export default function Home() {
                   index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
               >
-                <div className="absolute inset-0 bg-black/40 z-10" />
+                {/* Ambient blur background for mobile so any cover image fits cleanly */}
+                <img
+                  src={slide.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff'}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-35 sm:hidden pointer-events-none"
+                />
+                <div className="absolute inset-0 bg-black/25 sm:bg-black/40 z-10" />
                 <img
                   src={slide.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff'}
                   alt={slide.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain sm:object-cover object-center relative z-10 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 z-20 flex items-center justify-center text-center">
-                  <div className="max-w-3xl px-4">
-                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-white leading-tight mb-6 drop-shadow-lg">
-                      {slide.title}
-                    </h1>
+                <div className="absolute inset-0 z-20 flex items-center justify-center text-center p-2 sm:p-4 md:p-8">
+                  <div className="max-w-3xl px-2 sm:px-4">
+                    {slide.title && (
+                      <h1 className="text-base xs:text-xl sm:text-3xl md:text-5xl lg:text-7xl font-serif font-bold text-white leading-tight mb-1 sm:mb-3 md:mb-6 drop-shadow-lg">
+                        {slide.title}
+                      </h1>
+                    )}
                     {slide.subtitle && (
-                      <p className="text-xl md:text-2xl text-white/90 mb-8 font-medium drop-shadow-md">
+                      <p className="text-[11px] xs:text-xs sm:text-base md:text-2xl text-white/90 mb-2 sm:mb-6 md:mb-8 font-medium drop-shadow-md line-clamp-2">
                         {slide.subtitle}
                       </p>
                     )}
-                    <Link
-                      to={slide.link || '/shop'}
-                      className="inline-flex px-8 py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30"
-                    >
-                      {slide.buttonText || 'Shop Now'} <ArrowRight size={18} className="ml-2" />
-                    </Link>
+                    {slide.buttonText && (
+                      <Link
+                        to={slide.link || '/shop'}
+                        className="inline-flex px-3 py-1.5 xs:px-4 xs:py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30 text-xs sm:text-sm md:text-base"
+                      >
+                        {slide.buttonText} <ArrowRight size={14} className="ml-1 sm:hidden" /><ArrowRight size={18} className="ml-2 hidden sm:inline" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -74,24 +85,27 @@ export default function Home() {
               <>
                 <button
                   onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-2 bg-black/30 sm:bg-white/20 hover:bg-black/50 sm:hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Previous Slide"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={18} className="sm:w-6 sm:h-6" />
                 </button>
                 <button
                   onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 p-1.5 sm:p-2 bg-black/30 sm:bg-white/20 hover:bg-black/50 sm:hover:bg-white/40 backdrop-blur-md rounded-full text-white transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Next Slide"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={18} className="sm:w-6 sm:h-6" />
                 </button>
-                <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-2">
+                <div className="absolute bottom-2 sm:bottom-6 left-0 right-0 z-30 flex justify-center gap-1.5 sm:gap-2">
                   {slides.map((_: any, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentSlide(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        idx === currentSlide ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80'
+                      className={`h-1.5 sm:h-2 rounded-full transition-all ${
+                        idx === currentSlide ? 'bg-white w-4 sm:w-6' : 'bg-white/50 hover:bg-white/80 w-1.5 sm:w-2'
                       }`}
+                      aria-label={`Go to slide ${idx + 1}`}
                     />
                   ))}
                 </div>
@@ -99,19 +113,19 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-32 flex flex-col items-center text-center">
-            <span className="text-[#c2a578] font-medium tracking-wider text-sm uppercase mb-4 block">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 md:py-24 lg:py-32 flex flex-col items-center text-center">
+            <span className="text-[#c2a578] font-medium tracking-wider text-xs sm:text-sm uppercase mb-3 sm:mb-4 block">
               Welcome to AN Mart
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 leading-tight mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 leading-tight mb-4 sm:mb-6">
               Discover Pure <br className="hidden md:block" /> Radiance
             </h1>
-            <p className="text-gray-600 text-lg mb-8 max-w-lg mx-auto">
+            <p className="text-gray-600 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 max-w-lg mx-auto">
               Explore our exclusive collection of premium cosmetics, authentic skincare, and exquisite women's jewellery.
             </p>
             <Link
               to="/shop"
-              className="px-8 py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium inline-flex items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30"
+              className="px-6 py-2.5 sm:px-8 sm:py-3.5 bg-[#c2a578] text-white rounded hover:bg-[#b09467] font-medium inline-flex items-center justify-center transition-colors shadow-lg shadow-[#c2a578]/30 text-sm sm:text-base"
             >
               Shop Collection <ArrowRight size={18} className="ml-2" />
             </Link>
